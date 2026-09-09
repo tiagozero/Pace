@@ -480,6 +480,150 @@
     line-height:1.5;
   }
 
+  /* ---------- Connected speech: selection panel ---------- */
+  .cs-panel-divider{
+    height:1px;
+    background:rgba(255,255,255,0.16);
+    margin:4px 2px;
+  }
+  .cs-trigger-btn{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    width:100%;
+    background:none;
+    border:none;
+    color:var(--paper);
+    padding:6px 9px;
+    border-radius:4px;
+    font-size:12px;
+    font-weight:600;
+    letter-spacing:0.01em;
+  }
+  .cs-trigger-btn:hover{ background:rgba(255,255,255,0.14); }
+  .cs-input-label{
+    color:var(--paper);
+    font-size:11.5px;
+    padding:4px 6px 6px 6px;
+    max-width:220px;
+    white-space:normal;
+    opacity:0.85;
+  }
+  .cs-input-row{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    padding:0 4px 4px 4px;
+  }
+  .cs-input{
+    font-family:inherit;
+    font-size:12.5px;
+    color:var(--ink);
+    background:var(--paper);
+    border:none;
+    border-radius:4px;
+    padding:6px 8px;
+    width:130px;
+  }
+  .cs-input:focus{ outline:2px solid var(--accent); outline-offset:1px; }
+  .cs-confirm-btn{
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    width:26px;height:26px;
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    flex:0 0 auto;
+  }
+  .cs-confirm-btn:hover{ filter:brightness(1.08); }
+
+  /* ---------- Connected speech: settings list ---------- */
+  .cs-list{
+    max-height:150px;
+    overflow-y:auto;
+    display:flex;
+    flex-direction:column;
+    gap:5px;
+    margin-top:8px;
+  }
+  .cs-chip{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    border-radius:var(--radius);
+    padding:5px 6px 5px 8px;
+    font-size:12.5px;
+    color:var(--ink);
+    border-left:3px solid var(--accent);
+    background:var(--paper);
+  }
+  .cs-chip-text{
+    flex:0 1 auto;
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .cs-chip-arrow{ color:var(--ink-faint); flex:0 0 auto; }
+  .cs-chip-speech{
+    font-style:italic;
+    color:var(--ink-soft);
+    flex:1 1 auto;
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .cs-chip-remove{
+    background:none;
+    border:none;
+    color:var(--ink-faint);
+    width:20px;height:20px;
+    flex:0 0 auto;
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .cs-chip-remove:hover{color:var(--danger); background:rgba(166,75,59,0.14);}
+  .cs-list-empty{
+    font-size:12px;
+    color:var(--ink-faint);
+    line-height:1.5;
+  }
+
+  /* ---------- Connected speech: text decorations ---------- */
+  .connected-speech-replace{ color:var(--accent); }
+  .cs-tooltip{ position:relative; cursor:help; }
+  .connected-speech-hover.cs-tooltip{ border-bottom:1.5px dotted var(--accent); }
+  .cs-tooltip:hover::after{
+    content:attr(data-tooltip);
+    position:absolute;
+    bottom:100%;
+    left:50%;
+    transform:translateX(-50%);
+    background:var(--ink);
+    color:var(--paper);
+    padding:4px 8px;
+    border-radius:5px;
+    font-size:12px;
+    white-space:nowrap;
+    box-shadow:0 6px 18px var(--shadow);
+    z-index:60;
+    margin-bottom:7px;
+    pointer-events:none;
+  }
+  .cs-tooltip:hover::before{
+    content:"";
+    position:absolute;
+    bottom:100%;
+    left:50%;
+    transform:translateX(-50%);
+    border:5px solid transparent;
+    border-top-color:var(--ink);
+    margin-bottom:2px;
+    z-index:60;
+    pointer-events:none;
+  }
+
   /* boundary styles applied on ancestor, selector reads the .chunk itself */
   body[data-boundary="visible"] .chunk:not(.chunk-last)::after{
     content:"·";
@@ -1068,6 +1212,18 @@
         <div class="cat-filter-row" id="catFilterRow"></div>
         <div class="phrase-list" id="phraseList"></div>
       </div>
+      <div class="settings-group">
+        <span>Connected speech</span>
+        <div class="toggle-row">
+          <span>Show on hover</span>
+          <button class="switch" id="csHoverSwitch" role="switch" aria-checked="false"></button>
+        </div>
+        <div class="toggle-row">
+          <span>Replace in text</span>
+          <button class="switch" id="csReplaceSwitch" role="switch" aria-checked="false"></button>
+        </div>
+        <div class="cs-list" id="csList"></div>
+      </div>
     </div>
   </section>
 
@@ -1223,13 +1379,16 @@
       lineHeight: 1.85,
       textWidth: 720,
       reducedMotion: false,
+      connectedSpeechHover: false,
+      connectedSpeechInText: false,
       theme: "light"
     },
     libraryId: null,
     libraryTitle: "",
     librarySavedAt: 0,
     highlightPhrases: [],   // array of {text, category}, persisted & applied globally
-    categoryFilter: {}      // categoryId -> boolean (visible). Populated from CATEGORIES at init.
+    categoryFilter: {},     // categoryId -> boolean (visible). Populated from CATEGORIES at init.
+    connectedSpeechPhrases: [] // array of {text, speech}, persisted & applied globally
   };
 
   var FONT_OPTIONS = [
@@ -1317,6 +1476,25 @@
   }
   function saveHighlightPhrases(){
     try { localStorage.setItem("pace-highlight-phrases", JSON.stringify(state.highlightPhrases)); } catch(e){}
+  }
+  function loadConnectedSpeech(){
+    try {
+      var raw = localStorage.getItem("pace-connected-speech");
+      if (raw){
+        var parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)){
+          state.connectedSpeechPhrases = parsed.map(function(p){
+            if (p && typeof p.text === "string" && typeof p.speech === "string"){
+              return { text: normalizePhrase(p.text), speech: normalizePhrase(p.speech) };
+            }
+            return null;
+          }).filter(function(p){ return p && p.text && p.speech; });
+        }
+      }
+    } catch(e){ /* ignore */ }
+  }
+  function saveConnectedSpeech(){
+    try { localStorage.setItem("pace-connected-speech", JSON.stringify(state.connectedSpeechPhrases)); } catch(e){}
   }
   function loadCategoryFilter(){
     CATEGORIES.forEach(function(c){ state.categoryFilter[c.id] = true; });
@@ -1460,6 +1638,9 @@
   var phraseListEl = document.getElementById("phraseList");
   var catFilterRowEl = document.getElementById("catFilterRow");
   var highlightSelectionPanel = document.getElementById("highlightSelectionPanel");
+  var csHoverSwitch = document.getElementById("csHoverSwitch");
+  var csReplaceSwitch = document.getElementById("csReplaceSwitch");
+  var csListEl = document.getElementById("csList");
 
   var sumTime = document.getElementById("sumTime");
   var sumWords = document.getElementById("sumWords");
@@ -1879,6 +2060,183 @@
     applyPhraseHighlights();
   }
 
+  /* ============================================================
+     Connected speech
+     Saved as {text, speech} pairs — "text" is the original written
+     form the user selected, "speech" is how they've written it out
+     in connected/casual speech (e.g. "going to" -> "gonna"). Applied
+     globally, matched the same way as highlighted phrases.
+  ============================================================ */
+  function findConnectedSpeechEntry(normalizedLower){
+    return state.connectedSpeechPhrases.filter(function(p){
+      return p.text.toLowerCase() === normalizedLower;
+    })[0] || null;
+  }
+
+  function buildConnectedSpeechRegex(){
+    if (!state.connectedSpeechPhrases.length) return null;
+    var sorted = state.connectedSpeechPhrases.slice().sort(function(a,b){ return b.text.length - a.text.length; });
+    var parts = sorted.map(function(p){ return escapeRegex(p.text).replace(/\s+/g, "\\s+"); });
+    try {
+      return new RegExp("\\b(?:" + parts.join("|") + ")\\b", "gi");
+    } catch(e){ return null; }
+  }
+
+  function clearConnectedSpeechMarks(){
+    var spans = textContent.querySelectorAll(".connected-speech-hover, .connected-speech-replace");
+    spans.forEach(function(span){
+      var original = span.hasAttribute("data-original") ? span.getAttribute("data-original") : span.textContent;
+      var textNode = document.createTextNode(original);
+      if (span.parentNode) span.parentNode.replaceChild(textNode, span);
+    });
+    textContent.normalize();
+  }
+
+  function wrapConnectedSpeechFragment(node, start, end, isFirst, connectedSpeech, mode, alsoHoverOriginal){
+    var afterNode = start > 0 ? node.splitText(start) : node;
+    if (end - start < afterNode.nodeValue.length){
+      afterNode.splitText(end - start);
+    }
+    var original = afterNode.nodeValue;
+    var span = document.createElement("span");
+    span.setAttribute("data-original", original);
+    if (mode === "replace"){
+      span.className = "connected-speech-replace" + (alsoHoverOriginal ? " cs-tooltip" : "");
+      if (alsoHoverOriginal) span.setAttribute("data-tooltip", original);
+      afterNode.nodeValue = isFirst ? connectedSpeech : "";
+    } else {
+      span.className = "connected-speech-hover cs-tooltip";
+      span.setAttribute("data-tooltip", connectedSpeech);
+    }
+    afterNode.parentNode.insertBefore(span, afterNode);
+    span.appendChild(afterNode);
+  }
+
+  function applyConnectedSpeechInElement(root, regex, mode, alsoHoverOriginal){
+    var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode: function(node){
+        return node.nodeValue.length ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+      }
+    });
+    var textNodes = [];
+    var node;
+    while ((node = walker.nextNode())) textNodes.push(node);
+    if (!textNodes.length) return;
+
+    var full = "";
+    var nodeRanges = [];
+    textNodes.forEach(function(n){
+      var s = full.length;
+      full += n.nodeValue;
+      nodeRanges.push({ node: n, start: s, end: full.length });
+    });
+
+    var matches = [];
+    var m;
+    regex.lastIndex = 0;
+    while ((m = regex.exec(full)) !== null){
+      matches.push({ start: m.index, end: m.index + m[0].length, text: m[0] });
+      if (m[0].length === 0) regex.lastIndex++;
+    }
+    if (!matches.length) return;
+
+    matches.sort(function(a,b){ return b.start - a.start; });
+
+    matches.forEach(function(match){
+      var entry = findConnectedSpeechEntry(normalizePhrase(match.text).toLowerCase());
+      if (!entry) return;
+      var isFirst = true;
+      nodeRanges.forEach(function(nr){
+        if (nr.end <= match.start || nr.start >= match.end) return;
+        var localStart = Math.max(0, match.start - nr.start);
+        var localEnd = Math.min(nr.node.nodeValue.length, match.end - nr.start);
+        if (localEnd <= localStart) return;
+        wrapConnectedSpeechFragment(nr.node, localStart, localEnd, isFirst, entry.speech, mode, alsoHoverOriginal);
+        isFirst = false;
+      });
+    });
+  }
+
+  function applyConnectedSpeechDisplay(){
+    clearConnectedSpeechMarks();
+    var mode = state.settings.connectedSpeechInText ? "replace" : (state.settings.connectedSpeechHover ? "hover" : null);
+    if (!mode) return;
+    var regex = buildConnectedSpeechRegex();
+    if (!regex) return;
+    var alsoHoverOriginal = mode === "replace" && state.settings.connectedSpeechHover;
+    var paragraphs = textContent.querySelectorAll("p");
+    paragraphs.forEach(function(p){ applyConnectedSpeechInElement(p, regex, mode, alsoHoverOriginal); });
+  }
+
+  function addConnectedSpeech(rawText, rawSpeech){
+    var normalized = normalizePhrase(rawText);
+    var speech = normalizePhrase(rawSpeech);
+    if (!normalized || normalized.length > 200 || !speech || speech.length > 200) return;
+    var existing = findConnectedSpeechEntry(normalized.toLowerCase());
+    if (existing){
+      existing.speech = speech;
+      existing.text = normalized;
+    } else {
+      state.connectedSpeechPhrases.push({ text: normalized, speech: speech });
+    }
+    saveConnectedSpeech();
+    renderConnectedSpeechList();
+    applyConnectedSpeechDisplay();
+  }
+
+  function removeConnectedSpeech(phraseLower){
+    state.connectedSpeechPhrases = state.connectedSpeechPhrases.filter(function(p){
+      return p.text.toLowerCase() !== phraseLower;
+    });
+    saveConnectedSpeech();
+    renderConnectedSpeechList();
+    applyConnectedSpeechDisplay();
+  }
+
+  function renderConnectedSpeechList(){
+    if (!csListEl) return;
+    csListEl.innerHTML = "";
+    if (!state.connectedSpeechPhrases.length){
+      var empty = document.createElement("div");
+      empty.className = "cs-list-empty";
+      empty.textContent = "None yet — select a word or phrase in the text and choose \u201cConnected speech\u201d to write out how it sounds when spoken.";
+      csListEl.appendChild(empty);
+      return;
+    }
+    var sorted = state.connectedSpeechPhrases.slice().sort(function(a,b){ return a.text.localeCompare(b.text); });
+    sorted.forEach(function(entry){
+      var chip = document.createElement("div");
+      chip.className = "cs-chip";
+
+      var text = document.createElement("span");
+      text.className = "cs-chip-text";
+      text.textContent = entry.text;
+
+      var arrow = document.createElement("span");
+      arrow.className = "cs-chip-arrow";
+      arrow.textContent = "\u2192";
+
+      var speech = document.createElement("span");
+      speech.className = "cs-chip-speech";
+      speech.textContent = entry.speech;
+
+      var remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "cs-chip-remove";
+      remove.setAttribute("aria-label", "Remove connected speech for " + entry.text);
+      remove.innerHTML = '<svg width="10" height="10" viewBox="0 0 14 14"><path d="M2 2l10 10M12 2 2 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+      remove.addEventListener("click", function(){
+        removeConnectedSpeech(entry.text.toLowerCase());
+      });
+
+      chip.appendChild(text);
+      chip.appendChild(arrow);
+      chip.appendChild(speech);
+      chip.appendChild(remove);
+      csListEl.appendChild(chip);
+    });
+  }
+
   function renderCategoryFilterRow(){
     catFilterRowEl.innerHTML = "";
     CATEGORIES.forEach(function(cat){
@@ -2005,6 +2363,72 @@
       });
       highlightSelectionPanel.appendChild(btn);
     });
+
+    var divider = document.createElement("div");
+    divider.className = "cs-panel-divider";
+    highlightSelectionPanel.appendChild(divider);
+
+    var csBtn = document.createElement("button");
+    csBtn.type = "button";
+    csBtn.className = "cs-trigger-btn";
+    csBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 14 14"><path d="M2 8.5c0-3 2-5.5 5-5.5s5 2.5 5 5.5-2 5.5-5 5.5" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round"/><path d="M9.5 11.5 11 13l.5-2" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Connected speech</span>';
+    csBtn.addEventListener("mousedown", function(e){ e.preventDefault(); });
+    csBtn.addEventListener("click", function(e){
+      e.preventDefault();
+      if (pendingSelectionText) showConnectedSpeechInputPanel(pendingSelectionText);
+    });
+    highlightSelectionPanel.appendChild(csBtn);
+  }
+
+  function showConnectedSpeechInputPanel(phraseText){
+    var keepText = phraseText;
+    highlightSelectionPanel.innerHTML = "";
+
+    var label = document.createElement("div");
+    label.className = "cs-input-label";
+    label.textContent = "\u201c" + keepText + "\u201d spoken as:";
+    highlightSelectionPanel.appendChild(label);
+
+    var row = document.createElement("div");
+    row.className = "cs-input-row";
+
+    var input = document.createElement("input");
+    input.type = "text";
+    input.className = "cs-input";
+    input.placeholder = "e.g. gonna";
+    var existing = findConnectedSpeechEntry(keepText.toLowerCase());
+    if (existing) input.value = existing.speech;
+    input.addEventListener("mousedown", function(e){ e.stopPropagation(); });
+    input.addEventListener("keydown", function(e){
+      if (e.key === "Enter"){ e.preventDefault(); confirmConnectedSpeech(); }
+      else if (e.key === "Escape"){
+        e.preventDefault();
+        hideHighlightSelectionPanel();
+        var sel = window.getSelection();
+        if (sel) sel.removeAllRanges();
+      }
+    });
+
+    var confirmBtn = document.createElement("button");
+    confirmBtn.type = "button";
+    confirmBtn.className = "cs-confirm-btn";
+    confirmBtn.setAttribute("aria-label", "Save connected speech");
+    confirmBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 14 14"><path d="M2.5 7.5l3 3 6-7" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    confirmBtn.addEventListener("mousedown", function(e){ e.preventDefault(); });
+    confirmBtn.addEventListener("click", function(e){ e.preventDefault(); confirmConnectedSpeech(); });
+
+    function confirmConnectedSpeech(){
+      var val = input.value.trim();
+      if (val && keepText) addConnectedSpeech(keepText, val);
+      hideHighlightSelectionPanel();
+      var sel = window.getSelection();
+      if (sel) sel.removeAllRanges();
+    }
+
+    row.appendChild(input);
+    row.appendChild(confirmBtn);
+    highlightSelectionPanel.appendChild(row);
+    input.focus();
   }
 
   function getActiveSelectionInfo(){
@@ -2083,6 +2507,7 @@
       if (state.currentIndex >= flat.length) state.currentIndex = Math.max(0, flat.length - 1);
       buildPulseRow();
       applyPhraseHighlights();
+      applyConnectedSpeechDisplay();
       highlightChunk(state.currentIndex, true);
       updateProgress();
     });
@@ -2319,6 +2744,14 @@
     document.documentElement.style.setProperty("--reading-width", state.settings.textWidth + "px");
     reducedMotionSwitch.classList.toggle("on", state.settings.reducedMotion);
     reducedMotionSwitch.setAttribute("aria-checked", String(state.settings.reducedMotion));
+    if (csHoverSwitch){
+      csHoverSwitch.classList.toggle("on", state.settings.connectedSpeechHover);
+      csHoverSwitch.setAttribute("aria-checked", String(state.settings.connectedSpeechHover));
+    }
+    if (csReplaceSwitch){
+      csReplaceSwitch.classList.toggle("on", state.settings.connectedSpeechInText);
+      csReplaceSwitch.setAttribute("aria-checked", String(state.settings.connectedSpeechInText));
+    }
     applyTheme();
   }
 
@@ -2418,6 +2851,24 @@
     applySettingsToUI();
   });
 
+  if (csHoverSwitch){
+    csHoverSwitch.addEventListener("click", function(){
+      state.settings.connectedSpeechHover = !state.settings.connectedSpeechHover;
+      saveSettings();
+      applySettingsToUI();
+      applyConnectedSpeechDisplay();
+    });
+  }
+
+  if (csReplaceSwitch){
+    csReplaceSwitch.addEventListener("click", function(){
+      state.settings.connectedSpeechInText = !state.settings.connectedSpeechInText;
+      saveSettings();
+      applySettingsToUI();
+      applyConnectedSpeechDisplay();
+    });
+  }
+
   // Rebuild chunk model on the fly while trying to keep the reader's rough position
   function rebuildAndRenderPreservePosition(prevIndex, wasPlaying){
     var prevTotal = state.flat.length || 1;
@@ -2429,6 +2880,7 @@
       state.currentIndex = Math.min(flat.length - 1, Math.max(0, Math.round(ratio * flat.length)));
       buildPulseRow();
       applyPhraseHighlights();
+      applyConnectedSpeechDisplay();
       highlightChunk(state.currentIndex, true);
       updateProgress();
       if (wasPlaying) play();
@@ -2449,6 +2901,8 @@
   loadCategoryFilter();
   renderCategoryFilterRow();
   renderPhraseList();
+  loadConnectedSpeech();
+  renderConnectedSpeechList();
   updateStartState();
 
   var restored = loadLastText();
