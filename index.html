@@ -287,15 +287,16 @@
 
   #readingArea{
     flex:1;
-    max-width:720px;
+    max-width:var(--reading-width, 720px);
     width:100%;
     margin:0 auto;
-    padding:36px 24px 160px 24px;
+    padding:88px 24px 160px 24px;
+    transition:max-width 0.15s ease;
   }
   #textContent p{
     margin:0 0 1.5em 0;
-    line-height:1.85;
-    font-family:var(--font-display);
+    line-height:var(--reading-line-height, 1.85);
+    font-family:var(--reading-font, var(--font-display));
     color:var(--ink);
   }
   #textContent{font-size:var(--reading-size, 21px);}
@@ -655,6 +656,23 @@
     font-size:13px;
   }
   .settings-row input[type="range"]{width:120px;}
+  .settings-row .range-value{
+    font-size:11px;
+    color:var(--ink-faint);
+    min-width:34px;
+    text-align:right;
+    font-variant-numeric:tabular-nums;
+  }
+  .font-select{
+    width:100%;
+    font-family:inherit;
+    font-size:13px;
+    color:var(--ink);
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:7px 8px;
+  }
   .toggle-row{
     display:flex;
     align-items:center;
@@ -1018,9 +1036,25 @@
         </div>
       </div>
       <div class="settings-group">
+        <span>Font</span>
+        <select class="font-select" id="fontSelect" aria-label="Reading font"></select>
+      </div>
+      <div class="settings-group">
         <div class="settings-row">
           <span>Font size</span>
           <input type="range" id="fontSizeRange" min="16" max="32" step="1" value="21">
+        </div>
+      </div>
+      <div class="settings-group">
+        <div class="settings-row">
+          <span>Text height</span>
+          <input type="range" id="lineHeightRange" min="1.3" max="2.4" step="0.05" value="1.85">
+        </div>
+      </div>
+      <div class="settings-group">
+        <div class="settings-row">
+          <span>Text width</span>
+          <input type="range" id="textWidthRange" min="440" max="960" step="20" value="720">
         </div>
       </div>
       <div class="settings-group">
@@ -1185,6 +1219,9 @@
       chunkSize: "natural",
       boundary: "subtle",
       fontSize: 21,
+      font: "original",
+      lineHeight: 1.85,
+      textWidth: 720,
       reducedMotion: false,
       theme: "light"
     },
@@ -1194,6 +1231,29 @@
     highlightPhrases: [],   // array of {text, category}, persisted & applied globally
     categoryFilter: {}      // categoryId -> boolean (visible). Populated from CATEGORIES at init.
   };
+
+  var FONT_OPTIONS = [
+    { id: "original",   label: "Original (serif)", stack: "\"Iowan Old Style\",\"Palatino Linotype\",\"Book Antiqua\", Georgia, serif" },
+    { id: "georgia",    label: "Georgia",           stack: "Georgia, \"Times New Roman\", serif" },
+    { id: "times",      label: "Times New Roman",   stack: "\"Times New Roman\", Times, serif" },
+    { id: "palatino",   label: "Palatino",          stack: "\"Palatino Linotype\", Palatino, \"Book Antiqua\", serif" },
+    { id: "garamond",   label: "Garamond",          stack: "Garamond, \"Apple Garamond\", \"Times New Roman\", serif" },
+    { id: "baskerville",label: "Baskerville",       stack: "Baskerville, \"Baskerville Old Face\", Georgia, serif" },
+    { id: "helvetica",  label: "Helvetica",         stack: "\"Helvetica Neue\", Helvetica, Arial, sans-serif" },
+    { id: "verdana",    label: "Verdana",           stack: "Verdana, Geneva, sans-serif" },
+    { id: "trebuchet",  label: "Trebuchet MS",      stack: "\"Trebuchet MS\", \"Segoe UI\", sans-serif" },
+    { id: "mono",       label: "Monospace",         stack: "\"SF Mono\", Menlo, Consolas, \"Courier New\", monospace" }
+  ];
+  function fontStackFor(id){
+    var found = FONT_OPTIONS.filter(function(f){ return f.id === id; })[0];
+    return found ? found.stack : FONT_OPTIONS[0].stack;
+  }
+  function populateFontSelect(){
+    if (!fontSelect) return;
+    fontSelect.innerHTML = FONT_OPTIONS.map(function(f){
+      return '<option value="' + f.id + '">' + f.label + '</option>';
+    }).join("");
+  }
 
   var CATEGORIES = [
     { id: "verb", label: "Verb tense" },
@@ -1393,6 +1453,9 @@
   var chunkSizeSeg = document.getElementById("chunkSizeSeg");
   var boundarySeg = document.getElementById("boundarySeg");
   var fontSizeRange = document.getElementById("fontSizeRange");
+  var fontSelect = document.getElementById("fontSelect");
+  var lineHeightRange = document.getElementById("lineHeightRange");
+  var textWidthRange = document.getElementById("textWidthRange");
   var reducedMotionSwitch = document.getElementById("reducedMotionSwitch");
   var phraseListEl = document.getElementById("phraseList");
   var catFilterRowEl = document.getElementById("catFilterRow");
@@ -2248,6 +2311,12 @@
     document.body.setAttribute("data-boundary", state.settings.boundary);
     fontSizeRange.value = state.settings.fontSize;
     document.documentElement.style.setProperty("--reading-size", state.settings.fontSize + "px");
+    if (fontSelect) fontSelect.value = state.settings.font;
+    document.documentElement.style.setProperty("--reading-font", fontStackFor(state.settings.font));
+    if (lineHeightRange) lineHeightRange.value = state.settings.lineHeight;
+    document.documentElement.style.setProperty("--reading-line-height", state.settings.lineHeight);
+    if (textWidthRange) textWidthRange.value = state.settings.textWidth;
+    document.documentElement.style.setProperty("--reading-width", state.settings.textWidth + "px");
     reducedMotionSwitch.classList.toggle("on", state.settings.reducedMotion);
     reducedMotionSwitch.setAttribute("aria-checked", String(state.settings.reducedMotion));
     applyTheme();
@@ -2319,6 +2388,30 @@
     saveSettings();
   });
 
+  if (fontSelect){
+    fontSelect.addEventListener("change", function(){
+      state.settings.font = fontSelect.value;
+      document.documentElement.style.setProperty("--reading-font", fontStackFor(state.settings.font));
+      saveSettings();
+    });
+  }
+
+  if (lineHeightRange){
+    lineHeightRange.addEventListener("input", function(){
+      state.settings.lineHeight = parseFloat(lineHeightRange.value);
+      document.documentElement.style.setProperty("--reading-line-height", state.settings.lineHeight);
+      saveSettings();
+    });
+  }
+
+  if (textWidthRange){
+    textWidthRange.addEventListener("input", function(){
+      state.settings.textWidth = parseInt(textWidthRange.value, 10);
+      document.documentElement.style.setProperty("--reading-width", state.settings.textWidth + "px");
+      saveSettings();
+    });
+  }
+
   reducedMotionSwitch.addEventListener("click", function(){
     state.settings.reducedMotion = !state.settings.reducedMotion;
     saveSettings();
@@ -2348,6 +2441,7 @@
   if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches){
     state.settings.theme = "dark";
   }
+  populateFontSelect();
   loadSettings();
   applySettingsToUI();
   loadHighlightPhrases();
