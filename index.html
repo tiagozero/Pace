@@ -1092,40 +1092,13 @@
     overflow-y:auto;
     padding:16px 20px 20px 20px;
   }
-  .gb-search-form{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
-  .gb-search-input{
-    flex:1 1 180px;
-    min-width:0;
-    font-family:inherit;
-    font-size:14px;
-    color:var(--ink);
-    background:var(--paper);
-    border:1px solid var(--line);
-    border-radius:var(--radius);
-    padding:9px 12px;
-  }
-  .gb-lang{
-    flex:0 0 auto;
-    font-family:inherit;
+  .gb-intro{
     font-size:12.5px;
     color:var(--ink-soft);
-    background:var(--paper);
-    border:1px solid var(--line);
-    border-radius:var(--radius);
-    padding:0 6px;
+    line-height:1.5;
+    margin:0 0 14px 0;
+    padding:0 4px;
   }
-  .gb-btn{
-    flex:0 0 auto;
-    background:var(--accent);
-    color:#fff;
-    border:none;
-    padding:9px 16px;
-    border-radius:var(--radius);
-    font-size:13px;
-    font-weight:600;
-  }
-  .gb-btn:hover:not(:disabled){background:var(--accent-ink);}
-  .gb-btn:disabled{background:var(--line);color:var(--ink-faint);cursor:not-allowed;}
   .gb-status{
     font-size:13px;
     color:var(--ink-soft);
@@ -1181,7 +1154,6 @@
     color:var(--ink-faint);
     font-family:var(--font-mono);
   }
-  .gb-more{width:100%;margin-top:12px;}
   .gb-back{
     background:none;
     border:none;
@@ -1319,24 +1291,12 @@
 
       <div class="gutenberg-body">
         <div id="gutenbergSearchView">
-          <form class="gb-search-form" id="gutenbergSearchForm">
-            <input type="search" class="gb-search-input" id="gutenbergQuery" placeholder="Search by title or author…" aria-label="Search Project Gutenberg">
-            <select class="gb-lang" id="gutenbergLang" aria-label="Language">
-              <option value="en" selected>English</option>
-              <option value="">Any</option>
-              <option value="fr">French</option>
-              <option value="de">German</option>
-              <option value="es">Spanish</option>
-              <option value="it">Italian</option>
-              <option value="pt">Portuguese</option>
-            </select>
-            <button class="gb-btn" type="submit">Search</button>
-          </form>
+          <p class="gb-intro">The most-downloaded books on Project Gutenberg. Pick one to load the whole book — or an individual chapter — straight into the editor.</p>
           <div id="gutenbergResults"></div>
         </div>
 
         <div id="gutenbergChapterView" style="display:none">
-          <button class="gb-back" id="gutenbergBackBtn" type="button">← Back to results</button>
+          <button class="gb-back" id="gutenbergBackBtn" type="button">← Back to list</button>
           <div class="gb-book-head" id="gutenbergBookInfo"></div>
           <div id="gutenbergChapterList"></div>
         </div>
@@ -1518,12 +1478,6 @@
     return /[,;:]$/.test(w) || /[—–]$/.test(w) || w === "-" || w === "--";
   }
 
-  /* ------------------------------------------------------------
-     Paragraph splitting
-     - wordsPerParagraph === 0  -> keep the author's paragraphs
-     - wordsPerParagraph  >  0  -> re-flow into blocks of N words,
-       but ONLY split after (.), (!), or (;)
-  ------------------------------------------------------------ */
   function splitParagraphs(text, wordsPerParagraph){
     if (wordsPerParagraph && wordsPerParagraph > 0){
       var segments = text.match(/[^.!;]+[.!;]?/g);
@@ -2162,17 +2116,79 @@
   }
 
   /* ============================================================
-     Project Gutenberg
-     Search the Gutendex catalogue, pull a plain-text edition of a
-     book, split it into chapters, and drop the result into the
-     editor. gutenberg.org doesn't send CORS headers, so the fetch
-     helper tries the direct URL first and then falls back to a
-     couple of public CORS proxies.
+     Project Gutenberg — top books browser
+     A static, curated list of the most-downloaded books from
+     https://www.gutenberg.org/browse/scores/top. Each entry
+     carries its Gutenberg ID; the plain-text edition is fetched
+     from the cache path and passed through a CORS proxy, because
+     gutenberg.org itself sends no CORS headers.
   ============================================================ */
-  var GUTENDEX = "https://gutendex.com/books";
+  var GB_TEXT_URL = "https://www.gutenberg.org/cache/epub/{id}/pg{id}.txt";
+  var GB_PAGE_URL = "https://www.gutenberg.org/ebooks/{id}";
   var GB_PROXIES = [
-    "https://api.allorigins.win/raw?url=",
-    "https://corsproxy.io/?url="
+    "https://corsproxy.io/?url=",
+    "https://api.allorigins.win/raw?url="
+  ];
+
+  var GUTENBERG_TOP = [
+    { id: 84,    title: "Frankenstein; Or, The Modern Prometheus", author: "Mary Wollstonecraft Shelley" },
+    { id: 2701,  title: "Moby Dick; Or, The Whale", author: "Herman Melville" },
+    { id: 46,    title: "A Christmas Carol", author: "Charles Dickens" },
+    { id: 1342,  title: "Pride and Prejudice", author: "Jane Austen" },
+    { id: 43,    title: "The Strange Case of Dr. Jekyll and Mr. Hyde", author: "Robert Louis Stevenson" },
+    { id: 1513,  title: "Romeo and Juliet", author: "William Shakespeare" },
+    { id: 11,    title: "Alice's Adventures in Wonderland", author: "Lewis Carroll" },
+    { id: 100,   title: "The Complete Works of William Shakespeare", author: "William Shakespeare" },
+    { id: 8492,  title: "The King in Yellow", author: "Robert W. Chambers" },
+    { id: 145,   title: "Middlemarch", author: "George Eliot" },
+    { id: 2641,  title: "A Room with a View", author: "E. M. Forster" },
+    { id: 33,    title: "The Scarlet Letter", author: "Nathaniel Hawthorne" },
+    { id: 16328, title: "Beowulf: An Anglo-Saxon Epic Poem", author: "Anonymous" },
+    { id: 2554,  title: "Crime and Punishment", author: "Fyodor Dostoyevsky" },
+    { id: 1260,  title: "Jane Eyre", author: "Charlotte Brontë" },
+    { id: 514,   title: "Little Women", author: "Louisa May Alcott" },
+    { id: 67979, title: "The Blue Castle", author: "L. M. Montgomery" },
+    { id: 2542,  title: "A Doll's House", author: "Henrik Ibsen" },
+    { id: 64317, title: "The Great Gatsby", author: "F. Scott Fitzgerald" },
+    { id: 16389, title: "The Enchanted April", author: "Elizabeth Von Arnim" },
+    { id: 844,   title: "The Importance of Being Earnest", author: "Oscar Wilde" },
+    { id: 28054, title: "The Brothers Karamazov", author: "Fyodor Dostoyevsky" },
+    { id: 174,   title: "The Picture of Dorian Gray", author: "Oscar Wilde" },
+    { id: 394,   title: "Cranford", author: "Elizabeth Cleghorn Gaskell" },
+    { id: 345,   title: "Dracula", author: "Bram Stoker" },
+    { id: 6593,  title: "The History of Tom Jones, a Foundling", author: "Henry Fielding" },
+    { id: 1259,  title: "Twenty Years After", author: "Alexandre Dumas" },
+    { id: 76,    title: "Adventures of Huckleberry Finn", author: "Mark Twain" },
+    { id: 1661,  title: "The Adventures of Sherlock Holmes", author: "Arthur Conan Doyle" },
+    { id: 98,    title: "A Tale of Two Cities", author: "Charles Dickens" },
+    { id: 1080,  title: "A Modest Proposal", author: "Jonathan Swift" },
+    { id: 1400,  title: "Great Expectations", author: "Charles Dickens" },
+    { id: 1184,  title: "The Count of Monte Cristo", author: "Alexandre Dumas" },
+    { id: 768,   title: "Wuthering Heights", author: "Emily Brontë" },
+    { id: 3207,  title: "Leviathan", author: "Thomas Hobbes" },
+    { id: 205,   title: "Walden", author: "Henry David Thoreau" },
+    { id: 35,    title: "The Time Machine", author: "H. G. Wells" },
+    { id: 36,    title: "The War of the Worlds", author: "H. G. Wells" },
+    { id: 5230,  title: "The Invisible Man", author: "H. G. Wells" },
+    { id: 219,   title: "Heart of Darkness", author: "Joseph Conrad" },
+    { id: 236,   title: "The Jungle Book", author: "Rudyard Kipling" },
+    { id: 120,   title: "Treasure Island", author: "Robert Louis Stevenson" },
+    { id: 135,   title: "Les Misérables", author: "Victor Hugo" },
+    { id: 1257,  title: "The Three Musketeers", author: "Alexandre Dumas" },
+    { id: 158,   title: "Emma", author: "Jane Austen" },
+    { id: 161,   title: "Sense and Sensibility", author: "Jane Austen" },
+    { id: 105,   title: "Persuasion", author: "Jane Austen" },
+    { id: 121,   title: "Northanger Abbey", author: "Jane Austen" },
+    { id: 141,   title: "Mansfield Park", author: "Jane Austen" },
+    { id: 1952,  title: "The Yellow Wallpaper", author: "Charlotte Perkins Gilman" },
+    { id: 5200,  title: "The Metamorphosis", author: "Franz Kafka" },
+    { id: 2490,  title: "Siddhartha", author: "Hermann Hesse" },
+    { id: 2680,  title: "Meditations", author: "Marcus Aurelius" },
+    { id: 1497,  title: "The Republic", author: "Plato" },
+    { id: 1998,  title: "Thus Spake Zarathustra", author: "Friedrich Nietzsche" },
+    { id: 1727,  title: "The Odyssey", author: "Homer" },
+    { id: 6130,  title: "The Iliad", author: "Homer" },
+    { id: 996,   title: "Don Quixote", author: "Miguel de Cervantes" }
   ];
 
   var gutenbergBtn = document.getElementById("gutenbergBtn");
@@ -2180,18 +2196,21 @@
   var gutenbergCloseBtn = document.getElementById("gutenbergCloseBtn");
   var gutenbergSearchView = document.getElementById("gutenbergSearchView");
   var gutenbergChapterView = document.getElementById("gutenbergChapterView");
-  var gutenbergSearchForm = document.getElementById("gutenbergSearchForm");
-  var gutenbergQuery = document.getElementById("gutenbergQuery");
-  var gutenbergLang = document.getElementById("gutenbergLang");
   var gutenbergResults = document.getElementById("gutenbergResults");
   var gutenbergBackBtn = document.getElementById("gutenbergBackBtn");
   var gutenbergBookInfo = document.getElementById("gutenbergBookInfo");
   var gutenbergChapterList = document.getElementById("gutenbergChapterList");
 
-  var gbBrowseLoaded = false;
-  var gbNextUrl = null;
+  var gbListRendered = false;
 
-  /* ---------- network ---------- */
+  /* ---------- URLs & fetch ---------- */
+  function gbTextUrl(id){
+    return GB_TEXT_URL.replace(/\{id\}/g, String(id));
+  }
+  function gbPageUrl(id){
+    return GB_PAGE_URL.replace(/\{id\}/g, String(id));
+  }
+
   function gbFetchText(url){
     var attempt = 0;
     function tryNext(){
@@ -2211,8 +2230,8 @@
     return tryNext();
   }
 
-  function gbSetStatus(message, isError, spinning){
-    gutenbergResults.innerHTML = "";
+  function gbSetStatus(container, message, isError, spinning){
+    container.innerHTML = "";
     var div = document.createElement("div");
     div.className = "gb-status" + (isError ? " error" : "");
     if (spinning){
@@ -2221,63 +2240,18 @@
       div.appendChild(sp);
     }
     div.appendChild(document.createTextNode(message));
-    gutenbergResults.appendChild(div);
+    container.appendChild(div);
   }
 
-  function gbFetchList(url, append){
-    gbNextUrl = null;
-    if (!append) gbSetStatus("Loading books…", false, true);
-    fetch(url).then(function(res){
-      if (!res.ok) throw new Error("HTTP " + res.status);
-      return res.json();
-    }).then(function(data){
-      gbNextUrl = data.next || null;
-      var books = data.results || [];
-      if (!books.length && !append){
-        gbSetStatus("No books matched that search. Try a different title or author.", false, false);
-        return;
-      }
-      gbRenderResults(books, append);
-    }).catch(function(){
-      gbSetStatus("Couldn't reach the Gutendex catalogue. Check your connection and try again.", true, false);
+  /* ---------- list view ---------- */
+  function gbRenderTopList(){
+    gutenbergResults.innerHTML = "";
+    var list = document.createElement("div");
+    list.className = "gb-list";
+    GUTENBERG_TOP.forEach(function(book){
+      list.appendChild(gbBuildBookRow(book));
     });
-  }
-
-  function gbRunSearch(query, append){
-    var params = {};
-    if (query) params.search = query;
-    if (gutenbergLang && gutenbergLang.value) params.languages = gutenbergLang.value;
-    var qs = Object.keys(params).map(function(k){
-      return encodeURIComponent(k) + "=" + encodeURIComponent(params[k]);
-    }).join("&");
-    gbFetchList(GUTENDEX + "?" + qs, append);
-  }
-
-  /* ---------- results list ---------- */
-  function gbRenderResults(books, append){
-    if (!append) gutenbergResults.innerHTML = "";
-    var list = gutenbergResults.querySelector(".gb-list");
-    if (!list){
-      list = document.createElement("div");
-      list.className = "gb-list";
-      gutenbergResults.appendChild(list);
-    }
-    books.forEach(function(book){ list.appendChild(gbBuildBookRow(book)); });
-
-    var old = gutenbergResults.querySelector(".gb-more");
-    if (old && old.parentNode) old.parentNode.removeChild(old);
-    if (gbNextUrl){
-      var more = document.createElement("button");
-      more.type = "button";
-      more.className = "gb-btn gb-more";
-      more.textContent = "Load more";
-      more.addEventListener("click", function(){
-        more.disabled = true;
-        more.textContent = "Loading…";
-        gbFetchList(gbNextUrl, true);
-      });
-      gutenbergResults.appendChild(more);
-    }
+    gutenbergResults.appendChild(list);
   }
 
   function gbBuildBookRow(book){
@@ -2289,42 +2263,23 @@
 
     var title = document.createElement("div");
     title.className = "gb-item-title";
-    title.textContent = book.title || "Untitled";
+    title.textContent = book.title;
 
     var meta = document.createElement("div");
     meta.className = "gb-item-meta";
-    var authors = (book.authors || []).map(function(a){ return a.name; }).join(", ");
-    meta.textContent = authors || "Unknown author";
+    meta.textContent = book.author;
 
     main.appendChild(title);
     main.appendChild(meta);
 
-    var dl = document.createElement("div");
-    dl.className = "gb-item-dl";
-    dl.textContent = (book.download_count || 0).toLocaleString() + " ↓";
+    var id = document.createElement("div");
+    id.className = "gb-item-dl";
+    id.textContent = "#" + book.id;
 
     row.appendChild(main);
-    row.appendChild(dl);
+    row.appendChild(id);
     row.addEventListener("click", function(){ gbOpenBook(book); });
     return row;
-  }
-
-  function gbPickTextUrl(book){
-    var formats = book.formats || {};
-    var prefs = [
-      "text/plain; charset=utf-8",
-      "text/plain; charset=us-ascii",
-      "text/plain",
-      "application/octet-stream"
-    ];
-    for (var i = 0; i < prefs.length; i++){
-      if (formats[prefs[i]]) return formats[prefs[i]];
-    }
-    var keys = Object.keys(formats);
-    for (var j = 0; j < keys.length; j++){
-      if (/^text\/plain/i.test(keys[j])) return formats[keys[j]];
-    }
-    return null;
   }
 
   /* ---------- book -> chapters ---------- */
@@ -2336,41 +2291,21 @@
 
     var h = document.createElement("h3");
     h.className = "gb-book-title";
-    h.textContent = book.title || "Untitled";
+    h.textContent = book.title;
 
     var a = document.createElement("div");
     a.className = "gb-book-author";
-    var authors = (book.authors || []).map(function(x){ return x.name; }).join(", ");
-    a.textContent = authors || "Unknown author";
+    a.textContent = book.author;
 
     gutenbergBookInfo.appendChild(h);
     gutenbergBookInfo.appendChild(a);
 
-    var url = gbPickTextUrl(book);
-    if (!url){
-      var noText = document.createElement("div");
-      noText.className = "gb-status error";
-      noText.textContent = "No plain-text edition of this book is available.";
-      gutenbergChapterList.appendChild(noText);
-      return;
-    }
+    gbSetStatus(gutenbergChapterList, "Downloading text…", false, true);
 
-    var loading = document.createElement("div");
-    loading.className = "gb-status";
-    var sp = document.createElement("span");
-    sp.className = "gb-spinner";
-    loading.appendChild(sp);
-    loading.appendChild(document.createTextNode("Downloading text…"));
-    gutenbergChapterList.appendChild(loading);
-
-    gbFetchText(url).then(function(raw){
+    gbFetchText(gbTextUrl(book.id)).then(function(raw){
       var text = stripGutenbergBoilerplate(raw);
       if (countWords(text) < 15){
-        gutenbergChapterList.innerHTML = "";
-        var bad = document.createElement("div");
-        bad.className = "gb-status error";
-        bad.textContent = "This text came back empty or unreadable.";
-        gutenbergChapterList.appendChild(bad);
+        gbSetStatus(gutenbergChapterList, "This text came back empty or unreadable.", true, false);
         return;
       }
       gbRenderChapters(book, text);
@@ -2378,7 +2313,15 @@
       gutenbergChapterList.innerHTML = "";
       var err = document.createElement("div");
       err.className = "gb-status error";
-      err.textContent = "Couldn't download the text — this is usually a network or browser-permission issue. Try again, or paste the text manually.";
+      err.appendChild(document.createTextNode("Couldn't download the text. "));
+      var link = document.createElement("a");
+      link.href = gbPageUrl(book.id);
+      link.target = "_blank";
+      link.rel = "noopener";
+      link.textContent = "Open it on gutenberg.org";
+      link.style.color = "var(--accent)";
+      err.appendChild(link);
+      err.appendChild(document.createTextNode(" and copy the plain-text version manually."));
       gutenbergChapterList.appendChild(err);
     });
   }
@@ -2512,10 +2455,9 @@
     gutenbergOverlay.classList.add("open");
     gutenbergSearchView.style.display = "";
     gutenbergChapterView.style.display = "none";
-    setTimeout(function(){ gutenbergQuery.focus(); }, 30);
-    if (!gbBrowseLoaded){
-      gbBrowseLoaded = true;
-      gbRunSearch("", false);
+    if (!gbListRendered){
+      gbListRendered = true;
+      gbRenderTopList();
     }
   }
 
@@ -2532,17 +2474,6 @@
     gutenbergChapterView.style.display = "none";
     gutenbergSearchView.style.display = "";
   });
-  gutenbergSearchForm.addEventListener("submit", function(e){
-    e.preventDefault();
-    gbBrowseLoaded = true;
-    gbRunSearch(gutenbergQuery.value.trim(), false);
-  });
-  if (gutenbergLang){
-    gutenbergLang.addEventListener("change", function(){
-      gbBrowseLoaded = true;
-      gbRunSearch(gutenbergQuery.value.trim(), false);
-    });
-  }
   document.addEventListener("keydown", function(e){
     if (e.code === "Escape" && gutenbergOverlay.classList.contains("open")) closeGutenberg();
   });
