@@ -29,6 +29,12 @@
     --cat-pink-tint: rgba(177,79,114,0.15);
     --cat-gray: #6B7268;
     --cat-gray-tint: rgba(107,114,104,0.15);
+    --diff-1: #D98A80;
+    --diff-1-tint: rgba(217,138,128,0.22);
+    --diff-2: #C9524B;
+    --diff-2-tint: rgba(201,82,75,0.28);
+    --diff-3: #A62B22;
+    --diff-3-tint: rgba(166,43,34,0.36);
     --radius: 3px;
     --font-display: "Iowan Old Style","Palatino Linotype","Book Antiqua", Georgia, serif;
     --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
@@ -60,6 +66,12 @@
     --cat-pink-tint:rgba(227,149,176,0.2);
     --cat-gray:#9AA39A;
     --cat-gray-tint:rgba(154,163,154,0.2);
+    --diff-1:#E8A79C;
+    --diff-1-tint:rgba(232,167,156,0.24);
+    --diff-2:#EE7A6E;
+    --diff-2-tint:rgba(238,122,110,0.30);
+    --diff-3:#FF6247;
+    --diff-3-tint:rgba(255,98,71,0.38);
     --shadow: rgba(0,0,0,0.55);
   }
 
@@ -94,6 +106,7 @@
   button:focus-visible,
   textarea:focus-visible,
   input:focus-visible,
+  select:focus-visible,
   a:focus-visible,
   [tabindex]:focus-visible{
     outline:2px solid var(--accent);
@@ -189,6 +202,7 @@
     display:flex;
     align-items:center;
     gap:10px;
+    flex-wrap:wrap;
   }
   .btn-ghost{
     background:none;
@@ -314,17 +328,21 @@
   mark.word-pair-highlight{
     background:var(--cat-gray-tint);
     color:inherit;
-    border-bottom:2px solid var(--cat-gray);
     border-radius:2px;
-    padding:0 1px;
+    padding:1px 2px;
     cursor:pointer;
   }
-  mark.word-pair-highlight[data-category="verb"]{ background:var(--warm-tint); border-bottom-color:var(--warm); }
-  mark.word-pair-highlight[data-category="phrasal"]{ background:var(--cat-teal-tint); border-bottom-color:var(--cat-teal); }
-  mark.word-pair-highlight[data-category="preposition"]{ background:var(--cat-blue-tint); border-bottom-color:var(--cat-blue); }
-  mark.word-pair-highlight[data-category="idiom"]{ background:var(--cat-purple-tint); border-bottom-color:var(--cat-purple); }
-  mark.word-pair-highlight[data-category="collocation"]{ background:var(--cat-pink-tint); border-bottom-color:var(--cat-pink); }
-  mark.word-pair-highlight[data-category="other"]{ background:var(--cat-gray-tint); border-bottom-color:var(--cat-gray); }
+  mark.word-pair-highlight[data-category="verb"]{ background:var(--warm-tint); }
+  mark.word-pair-highlight[data-category="phrasal"]{ background:var(--cat-teal-tint); }
+  mark.word-pair-highlight[data-category="preposition"]{ background:var(--cat-blue-tint); }
+  mark.word-pair-highlight[data-category="idiom"]{ background:var(--cat-purple-tint); }
+  mark.word-pair-highlight[data-category="collocation"]{ background:var(--cat-pink-tint); }
+  mark.word-pair-highlight[data-category="other"]{ background:var(--cat-gray-tint); }
+
+  mark.word-pair-highlight[data-difficulty="1"]{ background:var(--diff-1-tint); }
+  mark.word-pair-highlight[data-difficulty="2"]{ background:var(--diff-2-tint); }
+  mark.word-pair-highlight[data-difficulty="3"]{ background:var(--diff-3-tint); }
+
   mark.word-pair-highlight:hover{ filter:brightness(0.94); }
   body[data-theme="dark"] mark.word-pair-highlight:hover{ filter:brightness(1.25); }
 
@@ -338,7 +356,7 @@
     padding:6px;
     box-shadow:0 6px 20px var(--shadow);
     z-index:50;
-    white-space:nowrap;
+    max-width:min(94vw, 620px);
   }
   .highlight-float-panel::after{
     content:"";
@@ -347,6 +365,23 @@
     transform:translateX(-50%);
     border:5px solid transparent;
     border-top-color:var(--ink);
+  }
+  .hf-row{
+    display:flex;
+    align-items:center;
+    gap:2px;
+    flex-wrap:wrap;
+  }
+  .hf-row + .hf-row{margin-top:3px;}
+  .hf-label{
+    color:var(--paper);
+    opacity:0.62;
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    font-weight:700;
+    padding:0 8px 0 5px;
+    white-space:nowrap;
   }
   .cat-btn{
     display:inline-flex;
@@ -360,6 +395,7 @@
     font-size:12px;
     font-weight:600;
     letter-spacing:0.01em;
+    white-space:nowrap;
   }
   .cat-btn:hover{ background:rgba(255,255,255,0.14); }
   .cat-dot{
@@ -374,6 +410,9 @@
   .cat-dot[data-category="idiom"]{ background:var(--cat-purple); }
   .cat-dot[data-category="collocation"]{ background:var(--cat-pink); }
   .cat-dot[data-category="other"]{ background:var(--cat-gray); }
+  .cat-dot[data-difficulty="1"]{ background:var(--diff-1); }
+  .cat-dot[data-difficulty="2"]{ background:var(--diff-2); }
+  .cat-dot[data-difficulty="3"]{ background:var(--diff-3); }
 
   /* ---------- Category filter toggles (settings) ---------- */
   .cat-filter-row{
@@ -403,7 +442,17 @@
   .cat-filter-chip.active[data-category="idiom"]{ background:var(--cat-purple-tint); }
   .cat-filter-chip.active[data-category="collocation"]{ background:var(--cat-pink-tint); }
   .cat-filter-chip.active[data-category="other"]{ background:var(--cat-gray-tint); }
+  .cat-filter-chip.active[data-difficulty="1"]{ background:var(--diff-1-tint); }
+  .cat-filter-chip.active[data-difficulty="2"]{ background:var(--diff-2-tint); }
+  .cat-filter-chip.active[data-difficulty="3"]{ background:var(--diff-3-tint); }
   .cat-filter-chip:not(.active){ opacity:0.55; }
+
+  .settings-hint{
+    font-size:11px;
+    line-height:1.45;
+    color:var(--ink-faint);
+    margin:0 0 9px 0;
+  }
 
   /* ---------- Highlighted phrases list (settings) ---------- */
   .phrase-list{
@@ -432,20 +481,13 @@
   .phrase-chip{
     display:flex;
     align-items:center;
-    gap:7px;
+    gap:6px;
     border-radius:var(--radius);
     padding:5px 6px 5px 8px;
     font-size:12.5px;
     color:var(--ink);
-    border-left:3px solid var(--cat-gray);
     background:var(--paper);
   }
-  .phrase-chip[data-category="verb"]{ border-left-color:var(--warm); }
-  .phrase-chip[data-category="phrasal"]{ border-left-color:var(--cat-teal); }
-  .phrase-chip[data-category="preposition"]{ border-left-color:var(--cat-blue); }
-  .phrase-chip[data-category="idiom"]{ border-left-color:var(--cat-purple); }
-  .phrase-chip[data-category="collocation"]{ border-left-color:var(--cat-pink); }
-  .phrase-chip[data-category="other"]{ border-left-color:var(--cat-gray); }
   .phrase-chip-text{
     flex:1 1 auto;
     min-width:0;
@@ -463,6 +505,9 @@
     border-radius:3px;
     padding:2px 3px;
     max-width:74px;
+  }
+  .phrase-chip-diff-select{
+    max-width:56px;
   }
   .phrase-chip-remove{
     background:none;
@@ -624,7 +669,6 @@
     pointer-events:none;
   }
 
-  /* boundary styles applied on ancestor, selector reads the .chunk itself */
   body[data-boundary="visible"] .chunk:not(.chunk-last)::after{
     content:"·";
     color:var(--ink-faint);
@@ -751,7 +795,9 @@
     position:absolute;
     top:56px;
     right:20px;
-    width:270px;
+    width:280px;
+    max-height:calc(100vh - 90px);
+    overflow-y:auto;
     background:var(--paper);
     border:1px solid var(--line);
     border-radius:var(--radius);
@@ -797,13 +843,14 @@
     display:flex;
     align-items:center;
     justify-content:space-between;
+    gap:8px;
     font-size:13px;
   }
-  .settings-row input[type="range"]{width:120px;}
+  .settings-row input[type="range"]{width:110px;}
   .settings-row .range-value{
     font-size:11px;
     color:var(--ink-faint);
-    min-width:34px;
+    min-width:38px;
     text-align:right;
     font-variant-numeric:tabular-nums;
   }
@@ -1038,6 +1085,156 @@
   }
   .library-item-delete:hover{border-color:var(--danger); color:var(--danger);}
 
+  /* ---------- Project Gutenberg ---------- */
+  .gutenberg-modal{max-width:600px;max-height:86vh;}
+  .gutenberg-body{
+    flex:1 1 auto;
+    overflow-y:auto;
+    padding:16px 20px 20px 20px;
+  }
+  .gb-search-form{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+  .gb-search-input{
+    flex:1 1 180px;
+    min-width:0;
+    font-family:inherit;
+    font-size:14px;
+    color:var(--ink);
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:9px 12px;
+  }
+  .gb-lang{
+    flex:0 0 auto;
+    font-family:inherit;
+    font-size:12.5px;
+    color:var(--ink-soft);
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:0 6px;
+  }
+  .gb-btn{
+    flex:0 0 auto;
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    padding:9px 16px;
+    border-radius:var(--radius);
+    font-size:13px;
+    font-weight:600;
+  }
+  .gb-btn:hover:not(:disabled){background:var(--accent-ink);}
+  .gb-btn:disabled{background:var(--line);color:var(--ink-faint);cursor:not-allowed;}
+  .gb-status{
+    font-size:13px;
+    color:var(--ink-soft);
+    line-height:1.55;
+    padding:18px 4px;
+    text-align:center;
+  }
+  .gb-status.error{color:var(--danger);}
+  .gb-spinner{
+    display:inline-block;
+    width:12px;height:12px;
+    border:2px solid var(--line);
+    border-top-color:var(--accent);
+    border-radius:50%;
+    animation:gb-spin 0.7s linear infinite;
+    vertical-align:-2px;
+    margin-right:7px;
+  }
+  @keyframes gb-spin{to{transform:rotate(360deg);}}
+  @media (prefers-reduced-motion: reduce){ .gb-spinner{animation-duration:2.4s;} }
+  .gb-list{display:flex;flex-direction:column;gap:2px;}
+  .gb-item{
+    display:flex;
+    align-items:baseline;
+    gap:12px;
+    padding:11px 12px;
+    border-radius:4px;
+    border:1px solid transparent;
+    cursor:pointer;
+  }
+  .gb-item:hover{background:var(--accent-tint);border-color:var(--line);}
+  .gb-item-main{flex:1 1 auto;min-width:0;}
+  .gb-item-title{
+    font-family:var(--font-display);
+    font-size:15px;
+    color:var(--ink);
+    margin-bottom:3px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .gb-item-meta{
+    font-size:11.5px;
+    color:var(--ink-faint);
+    font-family:var(--font-mono);
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .gb-item-dl{
+    flex:0 0 auto;
+    font-size:11px;
+    color:var(--ink-faint);
+    font-family:var(--font-mono);
+  }
+  .gb-more{width:100%;margin-top:12px;}
+  .gb-back{
+    background:none;
+    border:none;
+    color:var(--ink-soft);
+    font-size:13px;
+    padding:4px 0;
+    margin-bottom:12px;
+  }
+  .gb-back:hover{color:var(--accent);}
+  .gb-book-head{margin-bottom:14px;}
+  .gb-book-title{
+    font-family:var(--font-display);
+    font-size:18px;
+    margin:0 0 4px 0;
+    line-height:1.3;
+  }
+  .gb-book-author{font-size:13px;color:var(--ink-soft);}
+  .gb-chapter-list{display:flex;flex-direction:column;gap:3px;}
+  .gb-section-label{
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--ink-faint);
+    font-weight:600;
+    margin:12px 0 4px 0;
+  }
+  .gb-chapter{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:10px 12px;
+    border:1px solid var(--line);
+    border-radius:4px;
+    font-size:13.5px;
+    cursor:pointer;
+  }
+  .gb-chapter:hover{border-color:var(--accent);background:var(--accent-tint);}
+  .gb-chapter-title{
+    flex:1 1 auto;
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    color:var(--ink);
+  }
+  .gb-chapter-words{
+    flex:0 0 auto;
+    font-size:11.5px;
+    color:var(--ink-faint);
+    font-family:var(--font-mono);
+  }
+
   @media (max-width:520px){
     .player-inner{gap:6px;}
     .speed-group{margin-left:2px;}
@@ -1046,6 +1243,7 @@
     #themeToggleFixed{right:12px; top:12px;}
     .input-actions{flex-wrap:wrap;}
     .input-actions .btn-ghost{flex:1 1 100%;}
+    .gutenberg-body{padding:14px;}
   }
 
   @media (prefers-reduced-motion: reduce){
@@ -1080,6 +1278,7 @@
         <div class="upload-wrap">
           <button class="btn-ghost" id="uploadBtn" type="button">Upload a .txt file</button>
           <button class="btn-ghost" id="libraryBtn" type="button">Library</button>
+          <button class="btn-ghost" id="gutenbergBtn" type="button">Project Gutenberg</button>
           <input type="file" id="fileInput" accept=".txt,text/plain" class="visually-hidden">
           <span id="fileName"></span>
         </div>
@@ -1105,6 +1304,43 @@
       </div>
       <div class="library-list" id="libraryList"></div>
       <div class="library-empty" id="libraryEmpty">No saved texts yet. Paste something and tap "Save to Library".</div>
+    </div>
+  </div>
+
+  <!-- ============ PROJECT GUTENBERG OVERLAY ============ -->
+  <div class="library-overlay" id="gutenbergOverlay">
+    <div class="library-modal gutenberg-modal" role="dialog" aria-modal="true" aria-label="Project Gutenberg">
+      <div class="library-header">
+        <h2>Project Gutenberg</h2>
+        <button class="library-close" id="gutenbergCloseBtn" type="button" aria-label="Close">
+          <svg width="14" height="14" viewBox="0 0 14 14"><path d="M2 2l10 10M12 2 2 12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+
+      <div class="gutenberg-body">
+        <div id="gutenbergSearchView">
+          <form class="gb-search-form" id="gutenbergSearchForm">
+            <input type="search" class="gb-search-input" id="gutenbergQuery" placeholder="Search by title or author…" aria-label="Search Project Gutenberg">
+            <select class="gb-lang" id="gutenbergLang" aria-label="Language">
+              <option value="en" selected>English</option>
+              <option value="">Any</option>
+              <option value="fr">French</option>
+              <option value="de">German</option>
+              <option value="es">Spanish</option>
+              <option value="it">Italian</option>
+              <option value="pt">Portuguese</option>
+            </select>
+            <button class="gb-btn" type="submit">Search</button>
+          </form>
+          <div id="gutenbergResults"></div>
+        </div>
+
+        <div id="gutenbergChapterView" style="display:none">
+          <button class="gb-back" id="gutenbergBackBtn" type="button">← Back to results</button>
+          <div class="gb-book-head" id="gutenbergBookInfo"></div>
+          <div id="gutenbergChapterList"></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1172,6 +1408,15 @@
         </div>
       </div>
       <div class="settings-group">
+        <span>Paragraph split</span>
+        <div class="settings-row">
+          <span>Words per paragraph</span>
+          <input type="range" id="paragraphSplitRange" min="0" max="300" step="10" value="0" aria-label="Words per paragraph">
+          <span class="range-value" id="paragraphSplitValue">Off</span>
+        </div>
+        <p class="settings-hint">Slide right to group text into blocks of that many words. Splits only happen after a period, exclamation mark, or semicolon. Slide to 0 to keep the original paragraphing.</p>
+      </div>
+      <div class="settings-group">
         <span>Boundary style</span>
         <div class="seg" id="boundarySeg">
           <button data-value="visible">Visible</button>
@@ -1209,7 +1454,9 @@
       </div>
       <div class="settings-group">
         <span>Highlighted phrases</span>
+        <p class="settings-hint">Select words in the text to tag a grammar category. Select two or more words and rate them by difficulty — those show up red.</p>
         <div class="cat-filter-row" id="catFilterRow"></div>
+        <div class="cat-filter-row" id="diffFilterRow"></div>
         <div class="phrase-list" id="phraseList"></div>
       </div>
       <div class="settings-group">
@@ -1252,18 +1499,14 @@
      Chunking engine
   ============================================================ */
   var TRIGGER_WORDS = new Set([
-    // prepositions
     "of","to","in","at","by","with","for","from","into","onto","upon","about",
     "above","below","under","over","through","during","before","after","between",
     "among","against","without","within","along","across","behind","beyond",
     "except","toward","towards","near","since","until","till","despite",
     "throughout","around","off","up","down","out",
-    // coordinating conjunctions
     "and","but","or","nor","so","yet",
-    // subordinating conjunctions
     "because","although","though","while","if","unless","whereas","when",
     "whenever","wherever","whether","as","once","than",
-    // relative pronouns
     "who","whom","whose","which","that"
   ]);
 
@@ -1275,7 +1518,40 @@
     return /[,;:]$/.test(w) || /[—–]$/.test(w) || w === "-" || w === "--";
   }
 
-  function splitParagraphs(text){
+  /* ------------------------------------------------------------
+     Paragraph splitting
+     - wordsPerParagraph === 0  -> keep the author's paragraphs
+     - wordsPerParagraph  >  0  -> re-flow into blocks of N words,
+       but ONLY split after (.), (!), or (;)
+  ------------------------------------------------------------ */
+  function splitParagraphs(text, wordsPerParagraph){
+    if (wordsPerParagraph && wordsPerParagraph > 0){
+      var segments = text.match(/[^.!;]+[.!;]?/g);
+      if (!segments) segments = [text];
+      segments = segments.map(function(s){ return s.trim(); }).filter(Boolean);
+      if (!segments.length) return [text.trim()];
+
+      var out = [];
+      var currentParaWords = [];
+      var currentWordCount = 0;
+
+      segments.forEach(function(seg){
+        var segWords = seg.split(/\s+/).filter(Boolean);
+        var segWordCount = segWords.length;
+
+        if (currentWordCount > 0 && (currentWordCount + segWordCount > wordsPerParagraph)) {
+          out.push(currentParaWords.join(" "));
+          currentParaWords = segWords;
+          currentWordCount = segWordCount;
+        } else {
+          currentParaWords = currentParaWords.concat(segWords);
+          currentWordCount += segWordCount;
+        }
+      });
+      if (currentParaWords.length) out.push(currentParaWords.join(" "));
+      return out;
+    }
+
     var paras = text.split(/\n\s*\n/).map(function(p){return p.trim();}).filter(Boolean);
     if (paras.length <= 1){
       var alt = text.split(/\n+/).map(function(p){return p.trim();}).filter(Boolean);
@@ -1310,7 +1586,6 @@
     }
     if (current.length) chunks.push(current);
 
-    // merge orphan single-word trigger chunks into a neighbour
     for (var j = 0; j < chunks.length; j++){
       if (chunks[j].length === 1){
         var c = stripPunct(chunks[j][0]).toLowerCase();
@@ -1328,11 +1603,10 @@
     return chunks.map(function(c){return c.join(" ");});
   }
 
-  // Returns array of paragraphs -> array of chunk strings
-  function buildModel(text, chunkSize){
+  function buildModel(text, chunkSize, wordsPerParagraph){
     var minWordsMap = {small:2, natural:4, sentence:Infinity};
     var minWords = minWordsMap[chunkSize] !== undefined ? minWordsMap[chunkSize] : 4;
-    var paragraphs = splitParagraphs(text);
+    var paragraphs = splitParagraphs(text, wordsPerParagraph);
     var model = [];
     paragraphs.forEach(function(para){
       var sentences = splitSentences(para);
@@ -1353,7 +1627,7 @@
   }
 
   function countWords(str){
-    var t = str.trim();
+    var t = String(str || "").trim();
     if (!t) return 0;
     return t.split(/\s+/).filter(Boolean).length;
   }
@@ -1363,8 +1637,8 @@
   ============================================================ */
   var state = {
     rawText: "",
-    model: null,           // paragraphs of chunk strings
-    flat: [],               // [{text, paraIndex, isLastInPara, wordCount}]
+    model: null,
+    flat: [],
     currentIndex: 0,
     playing: false,
     wpm: 140,
@@ -1373,6 +1647,7 @@
     lastResumeTs: null,
     settings: {
       chunkSize: "natural",
+      paragraphSplit: 0,
       boundary: "subtle",
       fontSize: 21,
       font: "original",
@@ -1386,9 +1661,10 @@
     libraryId: null,
     libraryTitle: "",
     librarySavedAt: 0,
-    highlightPhrases: [],   // array of {text, category}, persisted & applied globally
-    categoryFilter: {},     // categoryId -> boolean (visible). Populated from CATEGORIES at init.
-    connectedSpeechPhrases: [] // array of {text, speech}, persisted & applied globally
+    highlightPhrases: [],
+    categoryFilter: {},
+    difficultyFilter: {},
+    connectedSpeechPhrases: []
   };
 
   var FONT_OPTIONS = [
@@ -1429,6 +1705,22 @@
     return found ? found.label : "Other";
   }
 
+  var DIFFICULTIES = [
+    { id: 1, label: "Easy",   short: "Easy" },
+    { id: 2, label: "Medium", short: "Med" },
+    { id: 3, label: "Hard",   short: "Hard" }
+  ];
+  var DIFFICULTY_IDS = DIFFICULTIES.map(function(d){ return d.id; });
+  var DIFFICULTY_MIN_WORDS = 2;
+
+  function difficultyLabel(id){
+    var found = DIFFICULTIES.filter(function(d){ return d.id === id; })[0];
+    return found ? found.label : "";
+  }
+  function isValidDifficulty(v){
+    return DIFFICULTY_IDS.indexOf(Number(v)) !== -1;
+  }
+
   var prefersReducedMotionMQ = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
 
   function reducedMotionActive(){
@@ -1446,6 +1738,10 @@
         Object.assign(state.settings, parsed);
       }
     } catch(e){ /* ignore */ }
+    var ps = parseInt(state.settings.paragraphSplit, 10);
+    if (!isFinite(ps) || ps < 0) ps = 0;
+    if (ps > 300) ps = 300;
+    state.settings.paragraphSplit = ps;
   }
   function saveSettings(){
     try { localStorage.setItem("pace-settings", JSON.stringify(state.settings)); } catch(e){}
@@ -1463,10 +1759,11 @@
         var parsed = JSON.parse(raw);
         if (Array.isArray(parsed)){
           state.highlightPhrases = parsed.map(function(p){
-            if (typeof p === "string") return { text: p, category: DEFAULT_CATEGORY };
+            if (typeof p === "string") return { text: p, category: DEFAULT_CATEGORY, difficulty: 0 };
             if (p && typeof p.text === "string"){
               var cat = CATEGORY_IDS.indexOf(p.category) !== -1 ? p.category : DEFAULT_CATEGORY;
-              return { text: p.text, category: cat };
+              var diff = isValidDifficulty(p.difficulty) ? Number(p.difficulty) : 0;
+              return { text: p.text, category: cat, difficulty: diff };
             }
             return null;
           }).filter(function(p){ return p && p.text.trim(); });
@@ -1510,6 +1807,21 @@
   }
   function saveCategoryFilter(){
     try { localStorage.setItem("pace-category-filter", JSON.stringify(state.categoryFilter)); } catch(e){}
+  }
+  function loadDifficultyFilter(){
+    DIFFICULTY_IDS.forEach(function(id){ state.difficultyFilter[id] = true; });
+    try {
+      var raw = localStorage.getItem("pace-difficulty-filter");
+      if (raw){
+        var parsed = JSON.parse(raw);
+        DIFFICULTY_IDS.forEach(function(id){
+          if (typeof parsed[id] === "boolean") state.difficultyFilter[id] = parsed[id];
+        });
+      }
+    } catch(e){ /* ignore */ }
+  }
+  function saveDifficultyFilter(){
+    try { localStorage.setItem("pace-difficulty-filter", JSON.stringify(state.difficultyFilter)); } catch(e){}
   }
 
   /* ============================================================
@@ -1634,9 +1946,12 @@
   var fontSelect = document.getElementById("fontSelect");
   var lineHeightRange = document.getElementById("lineHeightRange");
   var textWidthRange = document.getElementById("textWidthRange");
+  var paragraphSplitRange = document.getElementById("paragraphSplitRange");
+  var paragraphSplitValue = document.getElementById("paragraphSplitValue");
   var reducedMotionSwitch = document.getElementById("reducedMotionSwitch");
   var phraseListEl = document.getElementById("phraseList");
   var catFilterRowEl = document.getElementById("catFilterRow");
+  var diffFilterRowEl = document.getElementById("diffFilterRow");
   var highlightSelectionPanel = document.getElementById("highlightSelectionPanel");
   var csHoverSwitch = document.getElementById("csHoverSwitch");
   var csReplaceSwitch = document.getElementById("csReplaceSwitch");
@@ -1711,7 +2026,7 @@
     if (!text) return;
     var defaultTitle = makeTitleFromText(text);
     var title = window.prompt("Save this text as:", defaultTitle);
-    if (title === null) return; // cancelled
+    if (title === null) return;
     title = title.trim() || defaultTitle;
     var now = Date.now();
     var id = state.libraryId || genLibraryId();
@@ -1780,8 +2095,7 @@
 
     var meta = document.createElement("div");
     meta.className = "library-item-meta";
-    var metaText = (item.wordCount||0) + " words · " + formatSavedDate(item.updatedAt || item.savedAt);
-    meta.textContent = metaText;
+    meta.textContent = (item.wordCount||0) + " words · " + formatSavedDate(item.updatedAt || item.savedAt);
     if (item.lastIndex > 0){
       var prog = document.createElement("span");
       prog.className = "library-item-progress";
@@ -1792,9 +2106,7 @@
 
     main.appendChild(title);
     main.appendChild(meta);
-    main.addEventListener("click", function(){
-      loadLibraryItem(item);
-    });
+    main.addEventListener("click", function(){ loadLibraryItem(item); });
 
     var del = document.createElement("button");
     del.className = "library-item-delete";
@@ -1850,6 +2162,392 @@
   }
 
   /* ============================================================
+     Project Gutenberg
+     Search the Gutendex catalogue, pull a plain-text edition of a
+     book, split it into chapters, and drop the result into the
+     editor. gutenberg.org doesn't send CORS headers, so the fetch
+     helper tries the direct URL first and then falls back to a
+     couple of public CORS proxies.
+  ============================================================ */
+  var GUTENDEX = "https://gutendex.com/books";
+  var GB_PROXIES = [
+    "https://api.allorigins.win/raw?url=",
+    "https://corsproxy.io/?url="
+  ];
+
+  var gutenbergBtn = document.getElementById("gutenbergBtn");
+  var gutenbergOverlay = document.getElementById("gutenbergOverlay");
+  var gutenbergCloseBtn = document.getElementById("gutenbergCloseBtn");
+  var gutenbergSearchView = document.getElementById("gutenbergSearchView");
+  var gutenbergChapterView = document.getElementById("gutenbergChapterView");
+  var gutenbergSearchForm = document.getElementById("gutenbergSearchForm");
+  var gutenbergQuery = document.getElementById("gutenbergQuery");
+  var gutenbergLang = document.getElementById("gutenbergLang");
+  var gutenbergResults = document.getElementById("gutenbergResults");
+  var gutenbergBackBtn = document.getElementById("gutenbergBackBtn");
+  var gutenbergBookInfo = document.getElementById("gutenbergBookInfo");
+  var gutenbergChapterList = document.getElementById("gutenbergChapterList");
+
+  var gbBrowseLoaded = false;
+  var gbNextUrl = null;
+
+  /* ---------- network ---------- */
+  function gbFetchText(url){
+    var attempt = 0;
+    function tryNext(){
+      var target = (attempt === 0) ? url : GB_PROXIES[attempt - 1] + encodeURIComponent(url);
+      attempt++;
+      return fetch(target).then(function(res){
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return res.text();
+      }).then(function(text){
+        if (!text || text.length < 40) throw new Error("Empty response");
+        return text;
+      }).catch(function(err){
+        if (attempt > GB_PROXIES.length) throw err;
+        return tryNext();
+      });
+    }
+    return tryNext();
+  }
+
+  function gbSetStatus(message, isError, spinning){
+    gutenbergResults.innerHTML = "";
+    var div = document.createElement("div");
+    div.className = "gb-status" + (isError ? " error" : "");
+    if (spinning){
+      var sp = document.createElement("span");
+      sp.className = "gb-spinner";
+      div.appendChild(sp);
+    }
+    div.appendChild(document.createTextNode(message));
+    gutenbergResults.appendChild(div);
+  }
+
+  function gbFetchList(url, append){
+    gbNextUrl = null;
+    if (!append) gbSetStatus("Loading books…", false, true);
+    fetch(url).then(function(res){
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      return res.json();
+    }).then(function(data){
+      gbNextUrl = data.next || null;
+      var books = data.results || [];
+      if (!books.length && !append){
+        gbSetStatus("No books matched that search. Try a different title or author.", false, false);
+        return;
+      }
+      gbRenderResults(books, append);
+    }).catch(function(){
+      gbSetStatus("Couldn't reach the Gutendex catalogue. Check your connection and try again.", true, false);
+    });
+  }
+
+  function gbRunSearch(query, append){
+    var params = {};
+    if (query) params.search = query;
+    if (gutenbergLang && gutenbergLang.value) params.languages = gutenbergLang.value;
+    var qs = Object.keys(params).map(function(k){
+      return encodeURIComponent(k) + "=" + encodeURIComponent(params[k]);
+    }).join("&");
+    gbFetchList(GUTENDEX + "?" + qs, append);
+  }
+
+  /* ---------- results list ---------- */
+  function gbRenderResults(books, append){
+    if (!append) gutenbergResults.innerHTML = "";
+    var list = gutenbergResults.querySelector(".gb-list");
+    if (!list){
+      list = document.createElement("div");
+      list.className = "gb-list";
+      gutenbergResults.appendChild(list);
+    }
+    books.forEach(function(book){ list.appendChild(gbBuildBookRow(book)); });
+
+    var old = gutenbergResults.querySelector(".gb-more");
+    if (old && old.parentNode) old.parentNode.removeChild(old);
+    if (gbNextUrl){
+      var more = document.createElement("button");
+      more.type = "button";
+      more.className = "gb-btn gb-more";
+      more.textContent = "Load more";
+      more.addEventListener("click", function(){
+        more.disabled = true;
+        more.textContent = "Loading…";
+        gbFetchList(gbNextUrl, true);
+      });
+      gutenbergResults.appendChild(more);
+    }
+  }
+
+  function gbBuildBookRow(book){
+    var row = document.createElement("div");
+    row.className = "gb-item";
+
+    var main = document.createElement("div");
+    main.className = "gb-item-main";
+
+    var title = document.createElement("div");
+    title.className = "gb-item-title";
+    title.textContent = book.title || "Untitled";
+
+    var meta = document.createElement("div");
+    meta.className = "gb-item-meta";
+    var authors = (book.authors || []).map(function(a){ return a.name; }).join(", ");
+    meta.textContent = authors || "Unknown author";
+
+    main.appendChild(title);
+    main.appendChild(meta);
+
+    var dl = document.createElement("div");
+    dl.className = "gb-item-dl";
+    dl.textContent = (book.download_count || 0).toLocaleString() + " ↓";
+
+    row.appendChild(main);
+    row.appendChild(dl);
+    row.addEventListener("click", function(){ gbOpenBook(book); });
+    return row;
+  }
+
+  function gbPickTextUrl(book){
+    var formats = book.formats || {};
+    var prefs = [
+      "text/plain; charset=utf-8",
+      "text/plain; charset=us-ascii",
+      "text/plain",
+      "application/octet-stream"
+    ];
+    for (var i = 0; i < prefs.length; i++){
+      if (formats[prefs[i]]) return formats[prefs[i]];
+    }
+    var keys = Object.keys(formats);
+    for (var j = 0; j < keys.length; j++){
+      if (/^text\/plain/i.test(keys[j])) return formats[keys[j]];
+    }
+    return null;
+  }
+
+  /* ---------- book -> chapters ---------- */
+  function gbOpenBook(book){
+    gutenbergSearchView.style.display = "none";
+    gutenbergChapterView.style.display = "";
+    gutenbergBookInfo.innerHTML = "";
+    gutenbergChapterList.innerHTML = "";
+
+    var h = document.createElement("h3");
+    h.className = "gb-book-title";
+    h.textContent = book.title || "Untitled";
+
+    var a = document.createElement("div");
+    a.className = "gb-book-author";
+    var authors = (book.authors || []).map(function(x){ return x.name; }).join(", ");
+    a.textContent = authors || "Unknown author";
+
+    gutenbergBookInfo.appendChild(h);
+    gutenbergBookInfo.appendChild(a);
+
+    var url = gbPickTextUrl(book);
+    if (!url){
+      var noText = document.createElement("div");
+      noText.className = "gb-status error";
+      noText.textContent = "No plain-text edition of this book is available.";
+      gutenbergChapterList.appendChild(noText);
+      return;
+    }
+
+    var loading = document.createElement("div");
+    loading.className = "gb-status";
+    var sp = document.createElement("span");
+    sp.className = "gb-spinner";
+    loading.appendChild(sp);
+    loading.appendChild(document.createTextNode("Downloading text…"));
+    gutenbergChapterList.appendChild(loading);
+
+    gbFetchText(url).then(function(raw){
+      var text = stripGutenbergBoilerplate(raw);
+      if (countWords(text) < 15){
+        gutenbergChapterList.innerHTML = "";
+        var bad = document.createElement("div");
+        bad.className = "gb-status error";
+        bad.textContent = "This text came back empty or unreadable.";
+        gutenbergChapterList.appendChild(bad);
+        return;
+      }
+      gbRenderChapters(book, text);
+    }).catch(function(){
+      gutenbergChapterList.innerHTML = "";
+      var err = document.createElement("div");
+      err.className = "gb-status error";
+      err.textContent = "Couldn't download the text — this is usually a network or browser-permission issue. Try again, or paste the text manually.";
+      gutenbergChapterList.appendChild(err);
+    });
+  }
+
+  function gbBuildChapterRow(title, words, onClick){
+    var row = document.createElement("div");
+    row.className = "gb-chapter";
+
+    var t = document.createElement("span");
+    t.className = "gb-chapter-title";
+    t.textContent = title;
+
+    var w = document.createElement("span");
+    w.className = "gb-chapter-words";
+    w.textContent = words.toLocaleString() + (words === 1 ? " word" : " words");
+
+    row.appendChild(t);
+    row.appendChild(w);
+    row.addEventListener("click", onClick);
+    return row;
+  }
+
+  function gbRenderChapters(book, text){
+    gutenbergChapterList.innerHTML = "";
+    var totalWords = countWords(text);
+    var chapters = splitIntoChapters(text);
+
+    var list = document.createElement("div");
+    list.className = "gb-chapter-list";
+
+    list.appendChild(gbBuildChapterRow("Entire book", totalWords, function(){
+      gbLoadIntoEditor(book.title, text);
+    }));
+
+    if (chapters && chapters.length){
+      var label = document.createElement("div");
+      label.className = "gb-section-label";
+      label.textContent = chapters.length + (chapters.length === 1 ? " chapter" : " chapters");
+      list.appendChild(label);
+
+      chapters.forEach(function(ch){
+        var wc = countWords(ch.text);
+        if (wc < 10) return;
+        list.appendChild(gbBuildChapterRow(ch.title, wc, function(){
+          gbLoadIntoEditor(book.title + " — " + ch.title, ch.text);
+        }));
+      });
+    } else {
+      var note = document.createElement("div");
+      note.className = "gb-status";
+      note.textContent = "No chapter headings were detected in this edition — read the whole book above.";
+      list.appendChild(note);
+    }
+
+    gutenbergChapterList.appendChild(list);
+  }
+
+  function gbLoadIntoEditor(title, text){
+    suppressLibraryClear = true;
+    pasteText.value = text;
+    suppressLibraryClear = false;
+    fileNameEl.textContent = title || "";
+    state.libraryId = null;
+    state.libraryTitle = "";
+    state.librarySavedAt = 0;
+    updateStartState();
+    closeGutenberg();
+    showScreen("input");
+    pasteText.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  /* ---------- Gutenberg text parsing ---------- */
+  function stripGutenbergBoilerplate(text){
+    var t = text.replace(/\r\n?/g, "\n");
+    var startRe = /\*\*\*\s*START OF (?:THE|THIS) PROJECT GUTENBERG EBOOK[^\n]*\*\*\*/i;
+    var endRe = /\*\*\*\s*END OF (?:THE|THIS) PROJECT GUTENBERG EBOOK[^\n]*\*\*\*/i;
+    var m = t.match(startRe);
+    if (m) t = t.slice(m.index + m[0].length);
+    m = t.match(endRe);
+    if (m) t = t.slice(0, m.index);
+    return t.replace(/^\s+|\s+$/g, "");
+  }
+
+  var GB_NUM_WORDS = "one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|" +
+    "thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|" +
+    "forty|fifty|sixty|seventy|eighty|ninety|hundred";
+  var GB_SECTIONS = "chapter|book|part|volume|canto|letter|act|scene|section|stave";
+  var GB_NUMBERED_RE = new RegExp(
+    "^(?:" + GB_SECTIONS + ")\\s+(?:the\\s+)?(?:[IVXLCDM]+|\\d+|" + GB_NUM_WORDS + ")\\b", "i"
+  );
+  var GB_UNNUMBERED_RE = /^(?:epilogue|prologue|introduction|preface|foreword|afterword|appendix)\b/i;
+
+  function isChapterHeading(line){
+    if (!line) return false;
+    if (line.length > 80) return false;
+    if (line.split(/\s+/).length > 12) return false;
+    if (/[,;:]$/.test(line)) return false;
+    return GB_NUMBERED_RE.test(line) || GB_UNNUMBERED_RE.test(line);
+  }
+
+  function splitIntoChapters(text){
+    var lines = text.split("\n");
+    var headings = [];
+    for (var i = 0; i < lines.length; i++){
+      var t = lines[i].trim();
+      if (!isChapterHeading(t)) continue;
+      var prevBlank = (i === 0) || (lines[i - 1].trim() === "");
+      if (!prevBlank) continue;
+      headings.push({ index: i, title: t });
+    }
+    if (headings.length < 2) return null;
+
+    var chapters = [];
+    if (headings[0].index > 0){
+      var front = lines.slice(0, headings[0].index).join("\n").trim();
+      if (countWords(front) >= 30) chapters.push({ title: "Front matter", text: front });
+    }
+    for (var j = 0; j < headings.length; j++){
+      var start = headings[j].index + 1;
+      var end = (j + 1 < headings.length) ? headings[j + 1].index : lines.length;
+      chapters.push({
+        title: headings[j].title,
+        text: lines.slice(start, end).join("\n").trim()
+      });
+    }
+    return chapters;
+  }
+
+  /* ---------- open / close ---------- */
+  function openGutenberg(){
+    gutenbergOverlay.classList.add("open");
+    gutenbergSearchView.style.display = "";
+    gutenbergChapterView.style.display = "none";
+    setTimeout(function(){ gutenbergQuery.focus(); }, 30);
+    if (!gbBrowseLoaded){
+      gbBrowseLoaded = true;
+      gbRunSearch("", false);
+    }
+  }
+
+  function closeGutenberg(){
+    gutenbergOverlay.classList.remove("open");
+  }
+
+  gutenbergBtn.addEventListener("click", openGutenberg);
+  gutenbergCloseBtn.addEventListener("click", closeGutenberg);
+  gutenbergOverlay.addEventListener("click", function(e){
+    if (e.target === gutenbergOverlay) closeGutenberg();
+  });
+  gutenbergBackBtn.addEventListener("click", function(){
+    gutenbergChapterView.style.display = "none";
+    gutenbergSearchView.style.display = "";
+  });
+  gutenbergSearchForm.addEventListener("submit", function(e){
+    e.preventDefault();
+    gbBrowseLoaded = true;
+    gbRunSearch(gutenbergQuery.value.trim(), false);
+  });
+  if (gutenbergLang){
+    gutenbergLang.addEventListener("change", function(){
+      gbBrowseLoaded = true;
+      gbRunSearch(gutenbergQuery.value.trim(), false);
+    });
+  }
+  document.addEventListener("keydown", function(e){
+    if (e.code === "Escape" && gutenbergOverlay.classList.contains("open")) closeGutenberg();
+  });
+
+  /* ============================================================
      Building & rendering the flattened chunk model (batched)
   ============================================================ */
   function flattenModel(model){
@@ -1877,10 +2575,8 @@
     var flat = flattenModel(model);
     var totalChunks = flat.length;
 
-    // Build paragraph <p> containers up front
     var paraEls = model.map(function(){
-      var p = document.createElement("p");
-      return p;
+      return document.createElement("p");
     });
 
     var BATCH = totalChunks > 1500 ? 250 : totalChunks + 1;
@@ -1912,12 +2608,6 @@
 
   /* ============================================================
      Word-pair / phrase highlighting
-     Highlights are stored as {text, category} pairs and matched
-     (case-insensitively, whitespace-normalised) against whatever
-     text is currently rendered, so a saved phrase like "have arrived"
-     lights up wherever it occurs, in any text, in any session —
-     colour-coded by grammar category (verb tense, phrasal verb,
-     preposition, idiom, collocation, other).
   ============================================================ */
   function normalizePhrase(str){
     return String(str || "").replace(/\s+/g, " ").trim();
@@ -1933,11 +2623,9 @@
     })[0] || null;
   }
 
-  // Builds one alternation regex over every phrase whose category is
-  // currently visible, longest phrases first so overlapping saved
-  // phrases don't shadow each other oddly.
   function buildHighlightRegex(){
     var visible = state.highlightPhrases.filter(function(p){
+      if (p.difficulty) return state.difficultyFilter[p.difficulty] !== false;
       return state.categoryFilter[p.category] !== false;
     });
     if (!visible.length) return null;
@@ -1967,11 +2655,18 @@
     var normalizedLower = normalizePhrase(phraseText).toLowerCase();
     var entry = findPhraseEntry(normalizedLower);
     var category = entry ? entry.category : DEFAULT_CATEGORY;
+    var difficulty = entry && entry.difficulty ? entry.difficulty : 0;
+
     var mark = document.createElement("mark");
     mark.className = "word-pair-highlight";
-    mark.title = categoryLabel(category) + " — click to remove this highlight";
     mark.setAttribute("data-phrase", normalizedLower);
     mark.setAttribute("data-category", category);
+    if (difficulty) mark.setAttribute("data-difficulty", String(difficulty));
+
+    mark.title = difficulty
+      ? ("Difficulty: " + difficultyLabel(difficulty) + " — click to remove this highlight")
+      : (categoryLabel(category) + " — click to remove this highlight");
+
     afterNode.parentNode.insertBefore(mark, afterNode);
     mark.appendChild(afterNode);
   }
@@ -2004,8 +2699,6 @@
     }
     if (!matches.length) return;
 
-    // Process from the last match backwards so earlier offsets stay valid
-    // as text nodes get split by splitText().
     matches.sort(function(a,b){ return b.start - a.start; });
 
     matches.forEach(function(match){
@@ -2027,45 +2720,63 @@
     paragraphs.forEach(function(p){ highlightMatchesInElement(p, regex); });
   }
 
-  function addHighlightPhrase(rawText, category){
-    var normalized = normalizePhrase(rawText);
-    if (!normalized || normalized.length > 200) return;
-    var cat = CATEGORY_IDS.indexOf(category) !== -1 ? category : DEFAULT_CATEGORY;
-    var existing = findPhraseEntry(normalized.toLowerCase());
-    if (existing){
-      existing.category = cat;
-    } else {
-      state.highlightPhrases.push({ text: normalized, category: cat });
-    }
+  function afterHighlightChange(){
     saveHighlightPhrases();
     renderPhraseList();
     applyPhraseHighlights();
+  }
+
+  function upsertHighlightPhrase(rawText){
+    var normalized = normalizePhrase(rawText);
+    if (!normalized || normalized.length > 200) return null;
+    var existing = findPhraseEntry(normalized.toLowerCase());
+    if (!existing){
+      existing = { text: normalized, category: DEFAULT_CATEGORY, difficulty: 0 };
+      state.highlightPhrases.push(existing);
+    }
+    return existing;
+  }
+
+  function addHighlightPhrase(rawText, category){
+    var entry = upsertHighlightPhrase(rawText);
+    if (!entry) return;
+    entry.category = CATEGORY_IDS.indexOf(category) !== -1 ? category : DEFAULT_CATEGORY;
+    afterHighlightChange();
+  }
+
+  function addDifficultyHighlight(rawText, level){
+    var lvl = Number(level);
+    if (!isValidDifficulty(lvl)) return;
+    var entry = upsertHighlightPhrase(rawText);
+    if (!entry) return;
+    entry.difficulty = lvl;
+    afterHighlightChange();
   }
 
   function removeHighlightPhrase(phraseLower){
     state.highlightPhrases = state.highlightPhrases.filter(function(p){
       return p.text.toLowerCase() !== phraseLower;
     });
-    saveHighlightPhrases();
-    renderPhraseList();
-    applyPhraseHighlights();
+    afterHighlightChange();
   }
 
   function setPhraseCategory(phraseLower, category){
     var entry = findPhraseEntry(phraseLower);
     if (!entry) return;
     entry.category = CATEGORY_IDS.indexOf(category) !== -1 ? category : DEFAULT_CATEGORY;
-    saveHighlightPhrases();
-    renderPhraseList();
-    applyPhraseHighlights();
+    afterHighlightChange();
+  }
+
+  function setPhraseDifficulty(phraseLower, level){
+    var entry = findPhraseEntry(phraseLower);
+    if (!entry) return;
+    var lvl = Number(level);
+    entry.difficulty = isValidDifficulty(lvl) ? lvl : 0;
+    afterHighlightChange();
   }
 
   /* ============================================================
      Connected speech
-     Saved as {text, speech} pairs — "text" is the original written
-     form the user selected, "speech" is how they've written it out
-     in connected/casual speech (e.g. "going to" -> "gonna"). Applied
-     globally, matched the same way as highlighted phrases.
   ============================================================ */
   function findConnectedSpeechEntry(normalizedLower){
     return state.connectedSpeechPhrases.filter(function(p){
@@ -2199,7 +2910,7 @@
     if (!state.connectedSpeechPhrases.length){
       var empty = document.createElement("div");
       empty.className = "cs-list-empty";
-      empty.textContent = "None yet — select a word or phrase in the text and choose \u201cConnected speech\u201d to write out how it sounds when spoken.";
+      empty.textContent = "None yet — select a word or phrase in the text and choose “Connected speech” to write out how it sounds when spoken.";
       csListEl.appendChild(empty);
       return;
     }
@@ -2262,12 +2973,40 @@
     });
   }
 
+  function renderDifficultyFilterRow(){
+    if (!diffFilterRowEl) return;
+    diffFilterRowEl.innerHTML = "";
+    DIFFICULTIES.forEach(function(diff){
+      var on = state.difficultyFilter[diff.id] !== false;
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "cat-filter-chip" + (on ? " active" : "");
+      btn.setAttribute("data-difficulty", String(diff.id));
+      btn.setAttribute("aria-pressed", String(on));
+      btn.title = "Show difficulty " + diff.id + " (" + diff.label + ") highlights";
+
+      var dot = document.createElement("span");
+      dot.className = "cat-dot";
+      dot.setAttribute("data-difficulty", String(diff.id));
+
+      btn.appendChild(dot);
+      btn.appendChild(document.createTextNode(diff.id + " · " + diff.label));
+      btn.addEventListener("click", function(){
+        state.difficultyFilter[diff.id] = !(state.difficultyFilter[diff.id] !== false);
+        saveDifficultyFilter();
+        renderDifficultyFilterRow();
+        applyPhraseHighlights();
+      });
+      diffFilterRowEl.appendChild(btn);
+    });
+  }
+
   function renderPhraseList(){
     phraseListEl.innerHTML = "";
     if (!state.highlightPhrases.length){
       var empty = document.createElement("div");
       empty.className = "phrase-list-empty";
-      empty.textContent = "None yet — select a few words in the text and choose a category to highlight them everywhere.";
+      empty.textContent = "None yet — select words in the text, then tag a category or rate the term by difficulty.";
       phraseListEl.appendChild(empty);
       return;
     }
@@ -2292,10 +3031,14 @@
         var chip = document.createElement("div");
         chip.className = "phrase-chip";
         chip.setAttribute("data-category", entry.category);
+        if (entry.difficulty) chip.setAttribute("data-difficulty", String(entry.difficulty));
 
         var text = document.createElement("span");
         text.className = "phrase-chip-text";
         text.textContent = entry.text;
+        text.title = entry.difficulty
+          ? (entry.text + " — difficulty: " + difficultyLabel(entry.difficulty))
+          : entry.text;
 
         var select = document.createElement("select");
         select.className = "phrase-chip-cat-select";
@@ -2311,6 +3054,25 @@
           setPhraseCategory(entry.text.toLowerCase(), select.value);
         });
 
+        var diffSelect = document.createElement("select");
+        diffSelect.className = "phrase-chip-cat-select phrase-chip-diff-select";
+        diffSelect.setAttribute("aria-label", "Difficulty for " + entry.text);
+        diffSelect.title = "Difficulty rating";
+        var noneOpt = document.createElement("option");
+        noneOpt.value = "0";
+        noneOpt.textContent = "—";
+        diffSelect.appendChild(noneOpt);
+        DIFFICULTIES.forEach(function(d){
+          var opt = document.createElement("option");
+          opt.value = String(d.id);
+          opt.textContent = d.short;
+          if (entry.difficulty === d.id) opt.selected = true;
+          diffSelect.appendChild(opt);
+        });
+        diffSelect.addEventListener("change", function(){
+          setPhraseDifficulty(entry.text.toLowerCase(), Number(diffSelect.value));
+        });
+
         var remove = document.createElement("button");
         remove.type = "button";
         remove.className = "phrase-chip-remove";
@@ -2322,6 +3084,7 @@
 
         chip.appendChild(text);
         chip.appendChild(select);
+        chip.appendChild(diffSelect);
         chip.appendChild(remove);
         group.appendChild(chip);
       });
@@ -2330,7 +3093,7 @@
     });
   }
 
-  /* ---- Selection -> category picker popup ---- */
+  /* ---- Selection -> category / difficulty picker popup ---- */
   var pendingSelectionText = "";
 
   function hideHighlightSelectionPanel(){
@@ -2339,8 +3102,16 @@
     pendingSelectionText = "";
   }
 
+  function clearNativeSelection(){
+    var sel = window.getSelection();
+    if (sel) sel.removeAllRanges();
+  }
+
   function buildHighlightSelectionPanelContents(){
     highlightSelectionPanel.innerHTML = "";
+
+    var catRow = document.createElement("div");
+    catRow.className = "hf-row";
     CATEGORIES.forEach(function(cat){
       var btn = document.createElement("button");
       btn.type = "button";
@@ -2358,11 +3129,47 @@
         e.preventDefault();
         if (pendingSelectionText) addHighlightPhrase(pendingSelectionText, cat.id);
         hideHighlightSelectionPanel();
-        var sel = window.getSelection();
-        if (sel) sel.removeAllRanges();
+        clearNativeSelection();
       });
-      highlightSelectionPanel.appendChild(btn);
+      catRow.appendChild(btn);
     });
+    highlightSelectionPanel.appendChild(catRow);
+
+    var selWordCount = countWords(pendingSelectionText);
+    if (selWordCount > DIFFICULTY_MIN_WORDS - 1){
+      var diffRow = document.createElement("div");
+      diffRow.className = "hf-row";
+
+      var lbl = document.createElement("span");
+      lbl.className = "hf-label";
+      lbl.textContent = "Rate";
+      diffRow.appendChild(lbl);
+
+      DIFFICULTIES.forEach(function(diff){
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "cat-btn";
+        btn.setAttribute("data-difficulty", String(diff.id));
+        btn.title = "Rate as " + diff.label + " — highlights the term in red";
+
+        var dot = document.createElement("span");
+        dot.className = "cat-dot";
+        dot.setAttribute("data-difficulty", String(diff.id));
+
+        btn.appendChild(dot);
+        btn.appendChild(document.createTextNode(diff.id + " " + diff.label));
+        btn.addEventListener("mousedown", function(e){ e.preventDefault(); });
+        btn.addEventListener("click", function(e){
+          e.preventDefault();
+          if (pendingSelectionText) addDifficultyHighlight(pendingSelectionText, diff.id);
+          hideHighlightSelectionPanel();
+          clearNativeSelection();
+        });
+        diffRow.appendChild(btn);
+      });
+
+      highlightSelectionPanel.appendChild(diffRow);
+    }
 
     var divider = document.createElement("div");
     divider.className = "cs-panel-divider";
@@ -2404,8 +3211,7 @@
       else if (e.key === "Escape"){
         e.preventDefault();
         hideHighlightSelectionPanel();
-        var sel = window.getSelection();
-        if (sel) sel.removeAllRanges();
+        clearNativeSelection();
       }
     });
 
@@ -2421,8 +3227,7 @@
       var val = input.value.trim();
       if (val && keepText) addConnectedSpeech(keepText, val);
       hideHighlightSelectionPanel();
-      var sel = window.getSelection();
-      if (sel) sel.removeAllRanges();
+      clearNativeSelection();
     }
 
     row.appendChild(input);
@@ -2496,7 +3301,7 @@
   }
 
   function rebuildAndRender(resetIndex, resumeIndex){
-    var model = buildModel(state.rawText, state.settings.chunkSize);
+    var model = buildModel(state.rawText, state.settings.chunkSize, state.settings.paragraphSplit);
     renderChunksBatched(model, function(flat){
       state.model = model;
       state.flat = flat;
@@ -2511,6 +3316,30 @@
       highlightChunk(state.currentIndex, true);
       updateProgress();
     });
+  }
+
+  function rebuildAndRenderPreservePosition(prevIndex, wasPlaying){
+    var prevTotal = state.flat.length || 1;
+    var ratio = prevIndex / prevTotal;
+    var model = buildModel(state.rawText, state.settings.chunkSize, state.settings.paragraphSplit);
+    renderChunksBatched(model, function(flat){
+      state.model = model;
+      state.flat = flat;
+      state.currentIndex = Math.min(flat.length - 1, Math.max(0, Math.round(ratio * flat.length)));
+      buildPulseRow();
+      applyPhraseHighlights();
+      applyConnectedSpeechDisplay();
+      highlightChunk(state.currentIndex, true);
+      updateProgress();
+      if (wasPlaying) play();
+    });
+  }
+
+  function rebuildPreservingPosition(){
+    var keepIndex = state.currentIndex;
+    var wasPlaying = state.playing;
+    pause();
+    rebuildAndRenderPreservePosition(keepIndex, wasPlaying);
   }
 
   function buildPulseRow(){
@@ -2657,7 +3486,7 @@
     sumPace.textContent = avgPace + " WPM";
 
     if (state.libraryId){
-      state.currentIndex = 0; // completed — clear "in progress" on next open
+      state.currentIndex = 0;
       saveLibraryProgress();
     }
 
@@ -2704,7 +3533,7 @@
 
   document.addEventListener("keydown", function(e){
     var active = document.activeElement;
-    var inTextInput = active && (active.tagName === "TEXTAREA" || active.tagName === "INPUT");
+    var inTextInput = active && (active.tagName === "TEXTAREA" || active.tagName === "INPUT" || active.tagName === "SELECT");
     if (inTextInput) return;
     if (!screens.reading.classList.contains("active")) return;
 
@@ -2726,6 +3555,12 @@
   /* ============================================================
      Settings panel
   ============================================================ */
+  function updateParagraphSplitLabel(){
+    if (!paragraphSplitValue) return;
+    var v = state.settings.paragraphSplit;
+    paragraphSplitValue.textContent = v > 0 ? (v + "w") : "Off";
+  }
+
   function applySettingsToUI(){
     Array.prototype.forEach.call(chunkSizeSeg.children, function(btn){
       btn.classList.toggle("active", btn.dataset.value === state.settings.chunkSize);
@@ -2742,6 +3577,10 @@
     document.documentElement.style.setProperty("--reading-line-height", state.settings.lineHeight);
     if (textWidthRange) textWidthRange.value = state.settings.textWidth;
     document.documentElement.style.setProperty("--reading-width", state.settings.textWidth + "px");
+    if (paragraphSplitRange){
+      paragraphSplitRange.value = state.settings.paragraphSplit;
+      updateParagraphSplitLabel();
+    }
     reducedMotionSwitch.classList.toggle("on", state.settings.reducedMotion);
     reducedMotionSwitch.setAttribute("aria-checked", String(state.settings.reducedMotion));
     if (csHoverSwitch){
@@ -2798,13 +3637,11 @@
   chunkSizeSeg.addEventListener("click", function(e){
     var btn = e.target.closest("button");
     if (!btn) return;
+    if (btn.dataset.value === state.settings.chunkSize) return;
     state.settings.chunkSize = btn.dataset.value;
     saveSettings();
     applySettingsToUI();
-    var keepIndex = state.currentIndex;
-    var wasPlaying = state.playing;
-    pause();
-    rebuildAndRenderPreservePosition(keepIndex, wasPlaying);
+    rebuildPreservingPosition();
   });
 
   boundarySeg.addEventListener("click", function(e){
@@ -2814,6 +3651,19 @@
     saveSettings();
     applySettingsToUI();
   });
+
+  if (paragraphSplitRange){
+    paragraphSplitRange.addEventListener("input", function(){
+      var v = parseInt(paragraphSplitRange.value, 10);
+      if (!isFinite(v) || v < 0) v = 0;
+      state.settings.paragraphSplit = v;
+      updateParagraphSplitLabel();
+      saveSettings();
+    });
+    paragraphSplitRange.addEventListener("change", function(){
+      rebuildPreservingPosition();
+    });
+  }
 
   fontSizeRange.addEventListener("input", function(){
     state.settings.fontSize = parseInt(fontSizeRange.value, 10);
@@ -2869,24 +3719,6 @@
     });
   }
 
-  // Rebuild chunk model on the fly while trying to keep the reader's rough position
-  function rebuildAndRenderPreservePosition(prevIndex, wasPlaying){
-    var prevTotal = state.flat.length || 1;
-    var ratio = prevIndex / prevTotal;
-    var model = buildModel(state.rawText, state.settings.chunkSize);
-    renderChunksBatched(model, function(flat){
-      state.model = model;
-      state.flat = flat;
-      state.currentIndex = Math.min(flat.length - 1, Math.max(0, Math.round(ratio * flat.length)));
-      buildPulseRow();
-      applyPhraseHighlights();
-      applyConnectedSpeechDisplay();
-      highlightChunk(state.currentIndex, true);
-      updateProgress();
-      if (wasPlaying) play();
-    });
-  }
-
   /* ============================================================
      Init
   ============================================================ */
@@ -2897,9 +3729,11 @@
   loadSettings();
   applySettingsToUI();
   loadHighlightPhrases();
-  saveHighlightPhrases(); // normalize any legacy (pre-category) format on disk immediately
+  saveHighlightPhrases();
   loadCategoryFilter();
+  loadDifficultyFilter();
   renderCategoryFilterRow();
+  renderDifficultyFilterRow();
   renderPhraseList();
   loadConnectedSpeech();
   renderConnectedSpeechList();
