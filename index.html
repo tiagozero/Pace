@@ -184,7 +184,8 @@
     border-radius:var(--radius);
     font-size:13px;
   }
-  .btn-ghost:hover{border-color:var(--accent);}
+  .btn-ghost:hover:not(:disabled){border-color:var(--accent);}
+  .btn-ghost:disabled{opacity:0.45;cursor:not-allowed;}
   #fileName{
     font-size:12px;
     color:var(--ink-soft);
@@ -220,6 +221,12 @@
     font-size:13px;
     margin-top:10px;
     min-height:18px;
+  }
+  .input-notice{
+    color:var(--accent);
+    font-size:13px;
+    margin-top:4px;
+    line-height:1.5;
   }
 
   /* ---------- Reading screen ---------- */
@@ -916,10 +923,11 @@
     align-items:center;
     gap:10px;
     margin-top:20px;
+    flex-wrap:wrap;
   }
   .input-actions .btn-primary{
     margin-top:0;
-    flex:1;
+    flex:1 1 200px;
   }
   .input-actions .btn-ghost{
     flex:0 0 auto;
@@ -1157,7 +1165,6 @@
     .divider-v{display:none;}
     #settingsPanel{right:10px;left:10px;width:auto;}
     #themeToggleFixed{right:12px; top:12px;}
-    .input-actions{flex-wrap:wrap;}
     .input-actions .btn-ghost{flex:1 1 100%;}
     .gutenberg-body{padding:14px;}
   }
@@ -1192,10 +1199,15 @@
 
       <div class="input-row">
         <div class="upload-wrap">
-          <button class="btn-ghost" id="uploadBtn" type="button">Upload a .txt file</button>
+          <button class="btn-ghost" id="uploadBtn" type="button">Upload .txt</button>
+          <button class="btn-ghost" id="jsonImportBtn" type="button"
+                  title='Load a Pace JSON file. Shape: { "title": "...", "text": "...", "chunks": [[...],[...]], "chunkSize": "natural", "wpm": 140, "highlightPhrases": [{"text":"in order to","category":"chunk"}], "connectedSpeech": [{"text":"going to","speech":"gonna"}] }'>
+            Import JSON
+          </button>
           <button class="btn-ghost" id="libraryBtn" type="button">Library</button>
           <button class="btn-ghost" id="gutenbergBtn" type="button">Project Gutenberg</button>
           <input type="file" id="fileInput" accept=".txt,text/plain" class="visually-hidden">
+          <input type="file" id="jsonInput" accept=".json,application/json" class="visually-hidden">
           <span id="fileName"></span>
         </div>
         <span class="word-count" id="wordCount">0 words</span>
@@ -1204,8 +1216,10 @@
       <div class="input-actions">
         <button class="btn-primary" id="startBtn" disabled>Start guided reading</button>
         <button class="btn-ghost" id="saveLibraryBtn" type="button" disabled>Save to Library</button>
+        <button class="btn-ghost" id="jsonExportBtn" type="button" disabled title="Download the current text, highlights and connected speech as JSON">Export JSON</button>
       </div>
       <div class="input-error" id="inputError" role="alert"></div>
+      <div class="input-notice" id="inputNotice" role="status"></div>
     </div>
   </section>
 
@@ -1310,6 +1324,7 @@
           <button data-value="natural" class="active">Natural</button>
           <button data-value="sentence">Sentence</button>
         </div>
+        <p class="settings-hint" id="customChunkHint" style="display:none;margin-top:8px;">Using the chunk layout imported from JSON. Changing chunk size or paragraph split will re-chunk from the plain text.</p>
       </div>
       <div class="settings-group">
         <span>Paragraph split</span>
@@ -1536,6 +1551,9 @@
     rawText: "",
     model: null,
     flat: [],
+    /* When a JSON file supplies its own chunk layout, it lives here and
+       overrides buildModel() until the text is edited or re-chunked. */
+    customModel: null,
     currentIndex: 0,
     playing: false,
     wpm: 140,
@@ -1591,6 +1609,8 @@
   ];
   var CATEGORY_IDS = CATEGORIES.map(function(c){ return c.id; });
   var DEFAULT_CATEGORY = "chunk";
+  var CHUNK_SIZES = ["small", "natural", "sentence"];
+  var BOUNDARIES = ["visible", "subtle", "hidden"];
   function categoryLabel(id){
     var found = CATEGORIES.filter(function(c){ return c.id === id; })[0];
     return found ? found.label : "Chunk";
@@ -1769,10 +1789,14 @@
   var startBtn = document.getElementById("startBtn");
   var wordCountEl = document.getElementById("wordCount");
   var inputError = document.getElementById("inputError");
+  var inputNotice = document.getElementById("inputNotice");
   var uploadBtn = document.getElementById("uploadBtn");
   var fileInput = document.getElementById("fileInput");
   var fileNameEl = document.getElementById("fileName");
   var saveLibraryBtn = document.getElementById("saveLibraryBtn");
+  var jsonImportBtn = document.getElementById("jsonImportBtn");
+  var jsonInput = document.getElementById("jsonInput");
+  var jsonExportBtn = document.getElementById("jsonExportBtn");
   var libraryBtn = document.getElementById("libraryBtn");
   var libraryOverlay = document.getElementById("libraryOverlay");
   var libraryCloseBtn = document.getElementById("libraryCloseBtn");
@@ -1814,6 +1838,7 @@
   var csHoverSwitch = document.getElementById("csHoverSwitch");
   var csReplaceSwitch = document.getElementById("csReplaceSwitch");
   var csListEl = document.getElementById("csList");
+  var customChunkHint = document.getElementById("customChunkHint");
 
   var sumTime = document.getElementById("sumTime");
   var sumWords = document.getElementById("sumWords");
@@ -1834,20 +1859,38 @@
   /* ============================================================
      Input screen behaviour
   ============================================================ */
+  var noticeTimer = null;
+  function showNotice(msg){
+    if (!inputNotice) return;
+    inputNotice.textContent = msg || "";
+    if (noticeTimer) clearTimeout(noticeTimer);
+    if (msg){
+      noticeTimer = setTimeout(function(){ inputNotice.textContent = ""; }, 6000);
+    }
+  }
+
   function updateStartState(){
     var wc = countWords(pasteText.value);
     wordCountEl.textContent = wc + (wc === 1 ? " word" : " words");
-    var enough = wc >= 15;
+    var hasCustom = !!(state.customModel && state.customModel.length);
+    var enough = wc >= 15 || (hasCustom && wc > 0);
     startBtn.disabled = !enough;
     saveLibraryBtn.disabled = pasteText.value.trim().length === 0;
+    if (jsonExportBtn) jsonExportBtn.disabled = pasteText.value.trim().length === 0;
     inputError.textContent = (pasteText.value.trim().length > 0 && !enough)
       ? "Add a bit more text — at least 15 words works best for guided pacing."
       : "";
+    if (customChunkHint) customChunkHint.style.display = hasCustom ? "" : "none";
   }
+
   var suppressLibraryClear = false;
   pasteText.addEventListener("input", function(){
     updateStartState();
-    if (!suppressLibraryClear) state.libraryId = null;
+    if (!suppressLibraryClear){
+      state.libraryId = null;
+      state.customModel = null;   // typed text no longer matches the imported chunk layout
+      updateStartState();
+    }
   });
 
   uploadBtn.addEventListener("click", function(){ fileInput.click(); });
@@ -1860,21 +1903,296 @@
     }
     var reader = new FileReader();
     reader.onload = function(e){
+      state.customModel = null;
       pasteText.value = String(e.target.result || "");
       fileNameEl.textContent = file.name;
       updateStartState();
+      showNotice("");
     };
     reader.onerror = function(){
       inputError.textContent = "Couldn't read that file. Try pasting the text instead.";
     };
     reader.readAsText(file);
+    fileInput.value = "";
   });
 
   startBtn.addEventListener("click", function(){
     var text = pasteText.value.trim();
-    if (countWords(text) < 15) { updateStartState(); return; }
+    if (countWords(text) < 15 && !(state.customModel && state.customModel.length)) { updateStartState(); return; }
     beginSession(text);
   });
+
+  /* ============================================================
+     JSON import / export
+  ============================================================ */
+  function normalizeImportedChunks(raw){
+    if (!Array.isArray(raw) || !raw.length) return null;
+
+    function chunkTextFromItem(item){
+      if (typeof item === "string") return item;
+      if (item && typeof item === "object"){
+        if (typeof item.text === "string") return item.text;
+        if (typeof item.chunk === "string") return item.chunk;
+      }
+      return null;
+    }
+    function cleanList(arr){
+      return arr.map(chunkTextFromItem)
+        .filter(function(t){ return typeof t === "string" && t.trim(); })
+        .map(function(t){ return t.replace(/\s+/g, " ").trim(); });
+    }
+
+    var nested = raw.some(function(it){
+      return Array.isArray(it) || (it && typeof it === "object" && Array.isArray(it.chunks));
+    });
+
+    var paragraphs = [];
+    if (nested){
+      raw.forEach(function(entry){
+        var arr = Array.isArray(entry) ? entry
+                : (entry && Array.isArray(entry.chunks) ? entry.chunks : null);
+        if (!arr) return;
+        var chunks = cleanList(arr);
+        if (chunks.length) paragraphs.push(chunks);
+      });
+    } else {
+      var flat = cleanList(raw);
+      if (flat.length) paragraphs.push(flat);
+    }
+    return paragraphs.length ? paragraphs : null;
+  }
+
+  function pickFirstString(obj, keys){
+    for (var i = 0; i < keys.length; i++){
+      var k = keys[i];
+      if (obj && typeof obj[k] === "string" && obj[k].trim()) return obj[k];
+    }
+    return "";
+  }
+  function pickFirstArray(obj, keys){
+    for (var i = 0; i < keys.length; i++){
+      var k = keys[i];
+      if (obj && Array.isArray(obj[k])) return obj[k];
+    }
+    return null;
+  }
+
+  function clampNumber(v, min, max){
+    var n = parseFloat(v);
+    if (!isFinite(n)) return null;
+    return Math.max(min, Math.min(max, n));
+  }
+
+  function applyImportedData(data){
+    if (!data || typeof data !== "object" || Array.isArray(data)){
+      throw new Error("The JSON file should contain an object at the top level.");
+    }
+
+    var chunks = normalizeImportedChunks(
+      pickFirstArray(data, ["chunks", "chunkedText", "chunked_text", "model", "paragraphs"])
+    );
+
+    var text = pickFirstString(data, ["text", "content", "body", "rawText", "raw_text"]);
+    if (!text && chunks){
+      text = chunks.map(function(p){ return p.join(" "); }).join("\n\n");
+    }
+    if (!text || !text.trim()){
+      throw new Error('No readable text found — the file needs a "text" string or a "chunks" array.');
+    }
+
+    suppressLibraryClear = true;
+    pasteText.value = text;
+    suppressLibraryClear = false;
+
+    state.libraryId = null;
+    state.libraryTitle = pickFirstString(data, ["title", "name"]).trim();
+    state.librarySavedAt = 0;
+    state.customModel = chunks;
+    state.currentIndex = 0;
+
+    /* ---- settings (accept a nested "settings" object or top-level keys) ---- */
+    var settingsSrc = (data.settings && typeof data.settings === "object" && !Array.isArray(data.settings))
+      ? data.settings : data;
+
+    if (CHUNK_SIZES.indexOf(settingsSrc.chunkSize) !== -1) state.settings.chunkSize = settingsSrc.chunkSize;
+    if (BOUNDARIES.indexOf(settingsSrc.boundary) !== -1) state.settings.boundary = settingsSrc.boundary;
+
+    var ps = clampNumber(settingsSrc.paragraphSplit, 0, 300);
+    if (ps !== null) state.settings.paragraphSplit = Math.round(ps);
+
+    var fs = clampNumber(settingsSrc.fontSize, 16, 32);
+    if (fs !== null) state.settings.fontSize = Math.round(fs);
+
+    var lh = clampNumber(settingsSrc.lineHeight, 1.3, 2.4);
+    if (lh !== null) state.settings.lineHeight = lh;
+
+    var tw = clampNumber(settingsSrc.textWidth, 440, 960);
+    if (tw !== null) state.settings.textWidth = Math.round(tw);
+
+    if (typeof settingsSrc.font === "string" &&
+        FONT_OPTIONS.some(function(f){ return f.id === settingsSrc.font; })){
+      state.settings.font = settingsSrc.font;
+    }
+    if (settingsSrc.theme === "dark" || settingsSrc.theme === "light"){
+      state.settings.theme = settingsSrc.theme;
+    }
+    if (typeof settingsSrc.reducedMotion === "boolean"){
+      state.settings.reducedMotion = settingsSrc.reducedMotion;
+    }
+
+    var importedWpm = clampNumber(settingsSrc.wpm !== undefined ? settingsSrc.wpm : settingsSrc.speed, 60, 400);
+    if (importedWpm !== null) setWpm(Math.round(importedWpm));
+
+    /* ---- highlighted phrases ---- */
+    var phraseSource = pickFirstArray(data, ["highlightPhrases", "highlight_phrases", "highlights", "tags"]);
+    var phraseCount = 0;
+    if (phraseSource){
+      phraseSource.forEach(function(item){
+        var t = null;
+        var cat = DEFAULT_CATEGORY;
+        if (typeof item === "string"){
+          t = item;
+        } else if (item && typeof item === "object" && typeof item.text === "string"){
+          t = item.text;
+          if (typeof item.category === "string" && CATEGORY_IDS.indexOf(item.category) !== -1){
+            cat = item.category;
+          }
+        }
+        if (!t) return;
+        var norm = normalizePhrase(t);
+        if (!norm || norm.length > 200) return;
+        var existing = findPhraseEntry(norm.toLowerCase());
+        if (existing) existing.category = cat;
+        else state.highlightPhrases.push({ text: norm, category: cat });
+        phraseCount++;
+      });
+    }
+
+    /* ---- connected speech ---- */
+    var csSource = data.connectedSpeech || data.connected_speech || data.connectedspeech || data.speech;
+    var csCount = 0;
+
+    function upsertImportedCS(t, s){
+      var norm = normalizePhrase(t);
+      var sp = normalizePhrase(s);
+      if (!norm || !sp || norm.length > 200 || sp.length > 200) return false;
+      var existing = findConnectedSpeechEntry(norm.toLowerCase());
+      if (existing){ existing.speech = sp; existing.text = norm; }
+      else state.connectedSpeechPhrases.push({ text: norm, speech: sp });
+      return true;
+    }
+
+    if (Array.isArray(csSource)){
+      csSource.forEach(function(item){
+        if (!item || typeof item !== "object") return;
+        var t = typeof item.text === "string" ? item.text
+              : (typeof item.phrase === "string" ? item.phrase : null);
+        var s = typeof item.speech === "string" ? item.speech
+              : (typeof item.sounds === "string" ? item.sounds
+              : (typeof item.as === "string" ? item.as : null));
+        if (t && s && upsertImportedCS(t, s)) csCount++;
+      });
+    } else if (csSource && typeof csSource === "object"){
+      Object.keys(csSource).forEach(function(k){
+        if (typeof csSource[k] === "string" && upsertImportedCS(k, csSource[k])) csCount++;
+      });
+    }
+
+    if (csCount && !state.settings.connectedSpeechHover && !state.settings.connectedSpeechInText){
+      state.settings.connectedSpeechHover = true;
+    }
+
+    /* ---- persist + refresh UI ---- */
+    saveSettings();
+    saveHighlightPhrases();
+    saveConnectedSpeech();
+    applySettingsToUI();
+    renderCategoryFilterRow();
+    renderPhraseList();
+    renderConnectedSpeechList();
+    updateStartState();
+
+    var parts = [];
+    parts.push(countWords(text).toLocaleString() + " words");
+    if (chunks) parts.push(chunks.length + (chunks.length === 1 ? " paragraph of custom chunks" : " paragraphs of custom chunks"));
+    if (phraseCount) parts.push(phraseCount + (phraseCount === 1 ? " highlighted phrase" : " highlighted phrases"));
+    if (csCount) parts.push(csCount + " connected-speech " + (csCount === 1 ? "entry" : "entries"));
+    return "Imported: " + parts.join(" · ") + ".";
+  }
+
+  function buildExportObject(){
+    var title = state.libraryTitle || makeTitleFromText(pasteText.value);
+    var obj = {
+      app: "Pace",
+      version: 1,
+      title: title,
+      text: pasteText.value,
+      settings: {
+        chunkSize: state.settings.chunkSize,
+        paragraphSplit: state.settings.paragraphSplit,
+        boundary: state.settings.boundary,
+        font: state.settings.font,
+        fontSize: state.settings.fontSize,
+        lineHeight: state.settings.lineHeight,
+        textWidth: state.settings.textWidth,
+        wpm: state.wpm,
+        theme: state.settings.theme,
+        reducedMotion: state.settings.reducedMotion
+      },
+      highlightPhrases: state.highlightPhrases.map(function(p){
+        return { text: p.text, category: p.category };
+      }),
+      connectedSpeech: state.connectedSpeechPhrases.map(function(p){
+        return { text: p.text, speech: p.speech };
+      })
+    };
+    if (state.customModel && state.customModel.length){
+      obj.chunks = state.customModel;
+    }
+    return obj;
+  }
+
+  function downloadJson(){
+    if (!pasteText.value.trim()) return;
+    var data = buildExportObject();
+    var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    var url = URL.createObjectURL(blob);
+    var safe = String(data.title || "pace-text").replace(/[^A-Za-z0-9 _-]+/g, "").trim().slice(0, 60) || "pace-text";
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = safe + ".json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
+    showNotice("Exported " + a.download + ".");
+  }
+
+  jsonImportBtn.addEventListener("click", function(){ jsonInput.click(); });
+  jsonInput.addEventListener("change", function(){
+    var file = jsonInput.files && jsonInput.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e){
+      try {
+        var parsed = JSON.parse(String(e.target.result || ""));
+        var summary = applyImportedData(parsed);
+        fileNameEl.textContent = file.name;
+        showNotice(summary);
+      } catch(err){
+        showNotice("");
+        inputError.textContent = (err && err.message) ? err.message : "Couldn't read that JSON file.";
+      }
+      jsonInput.value = "";
+    };
+    reader.onerror = function(){
+      inputError.textContent = "Couldn't read that file.";
+      jsonInput.value = "";
+    };
+    reader.readAsText(file);
+  });
+
+  jsonExportBtn.addEventListener("click", downloadJson);
 
   /* ============================================================
      Library screen behaviour
@@ -1882,7 +2200,7 @@
   saveLibraryBtn.addEventListener("click", function(){
     var text = pasteText.value.trim();
     if (!text) return;
-    var defaultTitle = makeTitleFromText(text);
+    var defaultTitle = state.libraryTitle || makeTitleFromText(text);
     var title = window.prompt("Save this text as:", defaultTitle);
     if (title === null) return;
     title = title.trim() || defaultTitle;
@@ -1991,9 +2309,11 @@
     pasteText.value = item.text;
     suppressLibraryClear = false;
     fileNameEl.textContent = "";
+    state.customModel = null;
     state.libraryId = item.id;
     state.libraryTitle = item.title;
     state.librarySavedAt = item.savedAt || Date.now();
+    showNotice("");
     updateStartState();
     closeLibrary();
     if (item.lastIndex > 0){
@@ -2280,9 +2600,11 @@
     pasteText.value = text;
     suppressLibraryClear = false;
     fileNameEl.textContent = title || "";
+    state.customModel = null;
     state.libraryId = null;
     state.libraryTitle = "";
     state.librarySavedAt = 0;
+    showNotice("");
     updateStartState();
     closeGutenberg();
     showScreen("input");
@@ -2375,6 +2697,11 @@
   /* ============================================================
      Building & rendering the flattened chunk model (batched)
   ============================================================ */
+  function currentModel(){
+    if (state.customModel && state.customModel.length) return state.customModel;
+    return buildModel(state.rawText, state.settings.chunkSize, state.settings.paragraphSplit);
+  }
+
   function flattenModel(model){
     var flat = [];
     model.forEach(function(paraChunks, pIdx){
@@ -3053,7 +3380,7 @@
   }
 
   function rebuildAndRender(resetIndex, resumeIndex){
-    var model = buildModel(state.rawText, state.settings.chunkSize, state.settings.paragraphSplit);
+    var model = currentModel();
     renderChunksBatched(model, function(flat){
       state.model = model;
       state.flat = flat;
@@ -3073,7 +3400,7 @@
   function rebuildAndRenderPreservePosition(prevIndex, wasPlaying){
     var prevTotal = state.flat.length || 1;
     var ratio = prevIndex / prevTotal;
-    var model = buildModel(state.rawText, state.settings.chunkSize, state.settings.paragraphSplit);
+    var model = currentModel();
     renderChunksBatched(model, function(flat){
       state.model = model;
       state.flat = flat;
@@ -3252,8 +3579,10 @@
   readAnotherBtn.addEventListener("click", function(){
     state.libraryId = null;
     state.libraryTitle = "";
+    state.customModel = null;
     pasteText.value = "";
     fileNameEl.textContent = "";
+    showNotice("");
     updateStartState();
     showScreen("input");
     pasteText.focus();
@@ -3343,6 +3672,9 @@
       csReplaceSwitch.classList.toggle("on", state.settings.connectedSpeechInText);
       csReplaceSwitch.setAttribute("aria-checked", String(state.settings.connectedSpeechInText));
     }
+    if (customChunkHint){
+      customChunkHint.style.display = (state.customModel && state.customModel.length) ? "" : "none";
+    }
     applyTheme();
   }
 
@@ -3389,8 +3721,9 @@
   chunkSizeSeg.addEventListener("click", function(e){
     var btn = e.target.closest("button");
     if (!btn) return;
-    if (btn.dataset.value === state.settings.chunkSize) return;
+    if (btn.dataset.value === state.settings.chunkSize && !state.customModel) return;
     state.settings.chunkSize = btn.dataset.value;
+    state.customModel = null;   // re-chunk from the plain text
     saveSettings();
     applySettingsToUI();
     rebuildPreservingPosition();
@@ -3413,6 +3746,8 @@
       saveSettings();
     });
     paragraphSplitRange.addEventListener("change", function(){
+      if (state.settings.paragraphSplit > 0) state.customModel = null;
+      applySettingsToUI();
       rebuildPreservingPosition();
     });
   }
